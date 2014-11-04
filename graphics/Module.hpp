@@ -1,0 +1,570 @@
+#ifndef GRAPHICS_HPP_
+#define GRAPHICS_HPP_
+
+#include <thread>
+#include <mutex>
+#include <chrono>
+#include <atomic>
+#include <vector>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/vector_angle.hpp>
+
+#include "../OpenGL.h"
+#include <GLL/GLL.hpp>
+#include "SFML/Graphics.hpp"
+
+#include "../Logger.hpp"
+#include "../vec.hpp"
+
+#include "../SharedTypes.hpp"
+#include "Types.hpp"
+#include "BlockFuncs.hpp"
+#include "EntityFuncs.hpp"
+
+namespace graphics
+{
+
+template <typename Shared>
+class Module
+{
+private:
+	template <typename T>
+	using ChunkFieldArray = ChunkFieldArray<typename Shared::ChunkFieldArraySize, T>;
+	template <typename T>
+	using BlockFieldArray = BlockFieldArray<typename Shared::BlockFieldArraySize, T>;
+
+	struct Context
+	{
+		Context()
+		{
+		    gll::init();
+			gll::setDepthTest(true);
+			gll::setCulling(true);
+		}
+	} context;
+
+	gll::Program program;
+	struct
+	{
+		gll::Attribute vertXYZ, vertUV, vertNormalXYZ;
+	} attributes;
+
+	struct
+	{
+		gll::Uniform mvp, model, eyePosXYZ;
+		gll::Uniform materialDiffuseTex, materialShininess, materialSpecularRGB;
+		gll::Uniform ambientLightRGB, lightRGB, lightXYZ, lightPower;
+	} uniforms;
+	glm::mat4 projection, projview;
+
+	GLuint chunkTbo, companionTbo;
+
+	Shared *shared;
+
+	BlockFuncs<Shared> blockFuncs;
+	EntityFuncs<Shared> entityFuncs;
+
+	ChunkFieldArray<glm::mat4> chunkTransforms;
+
+	std::atomic_bool vertexBufFlushed;
+	std::mutex vertexBufLock;
+	std::vector<Vertex> vertexBuf;
+	ivec3 vertexBufChunk;
+
+	void checkGLError(std::string msg);
+public:
+	ChunkFieldArray<ChunkGraphics> chunkGraphics;
+	EntityFieldArray<EntityGraphics> entityGraphics;
+
+	Module(Shared *shared, float aspect);
+	~Module();
+	void parallel(Time time);
+	void update(Time time);
+	void render();
+	void processDirtyEntity(int e);
+	bool buildChunk(ivec3_c &);
+	bool canMove();
+	void move(ivec3_c &m);
+};
+
+template <typename Shared>
+bool Module<Shared>::canMove()
+{
+	return vertexBufFlushed;
+}
+
+template <typename Shared>
+void Module<Shared>::move(ivec3::cref m)
+{
+	auto createChunk = [&] (ivec3::cref c)
+	{
+		GLuint vbo, vao;
+		glGenBuffers(1, &vbo);
+		glGenVertexArrays(1, &vao);
+		chunkGraphics.chunkAt(c).vao = vao;
+		chunkGraphics.chunkAt(c).vbo = vbo;
+	};
+
+	auto destroyChunk = [&] (ivec3::cref c)
+	{
+		GLuint vbo, vao;
+		glGenBuffers(1, &vbo);
+		glGenVertexArrays(1, &vao);
+		chunkGraphics.chunkAt(c).vao = vao;
+		chunkGraphics.chunkAt(c).vbo = vbo;
+	};
+
+	chunkGraphics.shift(-m, createChunk, destroyChunk);
+}
+
+template <typename Shared>
+inline void Module<Shared>::checkGLError(std::string msg)
+{
+	gll::onOpenGLErr([&] (GLenum err, GLubyte const *errstr)
+	{
+		Log::error("OpenGL error (" + msg + "): " + std::string((char const *)errstr));
+		exit(EXIT_FAILURE);
+	});
+}
+
+template <typename Shared>
+inline Module<Shared>::Module(Shared *shared, float aspect) :
+	//context(),
+	shared(shared),
+	blockFuncs(shared),
+	entityFuncs(shared, &blockFuncs)
+{
+	vertexBufFlushed = true;
+
+	// shader
+	program.create();
+	program.addShader(GL_VERTEX_SHADER, "shaders/phong_frag.vert", true);
+	program.addShader(GL_FRAGMENT_SHADER, "shaders/phong_frag.frag", true);
+	attributes.vertXYZ = program.getAttribute("vertXYZ");
+	attributes.vertUV = program.getAttribute("vertUV");
+	attributes.vertNormalXYZ = program.getAttribute("vertNormalXYZ");
+	program.link();
+	uniforms.mvp = program.getUniformLocation("mvp");
+	uniforms.model = program.getUniformLocation("model");
+	uniforms.eyePosXYZ = program.getUniformLocation("eyePosXYZ");
+	uniforms.materialDiffuseTex = program.getUniformLocation("materialDiffuseTex");
+	uniforms.materialShininess = program.getUniformLocation("materialShininess");
+	uniforms.materialSpecularRGB = program.getUniformLocation("materialSpecularRGB");
+	uniforms.ambientLightRGB = program.getUniformLocation("ambientLightRGB");
+	uniforms.lightRGB = program.getUniformLocation("lightRGB");
+	uniforms.lightXYZ = program.getUniformLocation("lightXYZ");
+	uniforms.lightPower = program.getUniformLocation("lightPower");
+	program.bind();
+
+	// set uniforms
+	glUniform1i(uniforms.materialDiffuseTex, 0);
+	glUniform1f(uniforms.materialShininess, 5);
+	glUniform3f(uniforms.materialSpecularRGB, .1, .1, .1);
+	glUniform3f(uniforms.ambientLightRGB, .12, .12, .12);
+	glUniform3f(uniforms.lightRGB, 50, 50, 50);
+	glUniform1f(uniforms.lightPower, 2);
+
+	// bind chunk texture
+	sf::Image chunkImg;
+	if (!chunkImg.loadFromFile("chunk.png"))
+	{
+		Log::error("Cannot open 'chunk.png'");
+		exit(EXIT_FAILURE);
+	}
+
+	glGenTextures(1, &chunkTbo);
+	glBindTexture(GL_TEXTURE_2D, chunkTbo);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, chunkImg.getSize().x, chunkImg.getSize().y, 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, chunkImg.getPixelsPtr());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	projection = glm::perspective<float>(glm::radians(60.), aspect, .1, 1000);
+
+	chunkTransforms.iterate([&] (ivec3 const &c, glm::mat4 &trans)
+	{
+		trans = glm::translate(c.glm() * glm::vec3(Shared::CSIZE_X,Shared::CSIZE_Y,Shared::CSIZE_Z));
+		return true;
+	});
+
+	chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &cg)
+	{
+		cg.create();
+		return true;
+	});
+
+	checkGLError("init");
+}
+
+template <typename Shared>
+inline Module<Shared>::~Module()
+{
+	shared->graphics.chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &cg)
+	{
+		cg.destroy();
+		return true;
+	});
+
+	program.destroy();
+	checkGLError("End");
+}
+
+template <typename Shared>
+inline void Module<Shared>::processDirtyEntity(int e)
+{
+	EntityGraphics &eg = shared->graphics.entityGraphics[e];
+	EntityType &type = shared->entityTypes[e];
+
+	assert(eg.dirty);
+	eg.dirty = false;
+
+	switch (type)
+	{
+	case EntityType::NONE:
+		if (eg.created)
+		{
+			entityFuncs.onDestroy(e);
+
+			eg.created = false;
+			glDeleteBuffers(1, &eg.vbo);
+			glDeleteVertexArrays(1, &eg.vao);
+		}
+		break;
+	default:
+		if (!eg.created)
+		{
+			eg.created = true;
+			glGenBuffers(1, &eg.vbo);
+			glGenVertexArrays(1, &eg.vao);
+
+			glBindBuffer(GL_ARRAY_BUFFER, eg.vbo);
+			glBindVertexArray(eg.vao);
+
+			GLenum const openGLType = gll::OpenGLType<VertexComponent>::type;
+
+			glEnableVertexAttribArray(attributes.vertXYZ);
+			glEnableVertexAttribArray(attributes.vertUV);
+			glEnableVertexAttribArray(attributes.vertNormalXYZ);
+			glVertexAttribPointer(attributes.vertXYZ,
+				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(0 * sizeof (VertexComponent)));
+			glVertexAttribPointer(attributes.vertUV,
+				2, openGLType, GL_FALSE, sizeof (Vertex), (void*)(3 * sizeof (VertexComponent)));
+			glVertexAttribPointer(attributes.vertNormalXYZ,
+				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
+
+			entityFuncs.onCreate(e);
+		}
+
+		eg.vertCount = entityFuncs.putVertices(eg.vbo, e);
+	}
+}
+
+template <typename Shared>
+inline void Module<Shared>::parallel(Time time)
+{
+	chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &graphics)
+	{
+		if (graphics.dirty)
+		{
+			buildChunk(c);
+			return true;
+		}
+		return true;
+	});
+}
+
+template <typename Shared>
+inline void Module<Shared>::update(Time time)
+{
+	if (!vertexBufFlushed.load())
+		if (vertexBufLock.try_lock())
+		{
+			GLuint vbo = shared->graphics.chunkGraphics.chunkAt(vertexBufChunk).vbo;
+			GLuint vao = shared->graphics.chunkGraphics.chunkAt(vertexBufChunk).vao;
+
+			chunkGraphics.chunkAt(vertexBufChunk).vertCount = vertexBuf.size();
+
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, vertexBuf.size() * sizeof (Vertex), vertexBuf.data(), GL_STATIC_DRAW);
+
+			// set format
+			glBindVertexArray(vao);
+
+			GLenum const openGLType = gll::OpenGLType<VertexComponent>::type;
+
+			glEnableVertexAttribArray(attributes.vertXYZ);
+			glEnableVertexAttribArray(attributes.vertUV);
+			glEnableVertexAttribArray(attributes.vertNormalXYZ);
+			glVertexAttribPointer(attributes.vertXYZ,
+				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(0 * sizeof (VertexComponent)));
+			glVertexAttribPointer(attributes.vertUV,
+				2, openGLType, GL_FALSE, sizeof (Vertex), (void*)(3 * sizeof (VertexComponent)));
+			glVertexAttribPointer(attributes.vertNormalXYZ,
+				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
+
+			vertexBufFlushed = true;
+			vertexBufLock.unlock();
+		}
+
+
+	shared->graphics.entityGraphics.iterate([&] (int e, EntityGraphics &eg)
+	{
+		if (eg.dirty)
+			processDirtyEntity(e);
+		return true;
+	});
+
+
+	shared->camPos = shared->physics.playerBody->getWorldTransform().getOrigin();
+	shared->camPos.y+= shared->physics.playerHeight / 2 - .2;
+}
+
+template <typename Shared>
+inline void Module<Shared>::render()
+{
+	program.bind();
+
+	glUniform3f(uniforms.eyePosXYZ, shared->camPos.x, shared->camPos.y, shared->camPos.z);
+	glUniform3f(uniforms.lightXYZ,  shared->camPos.x, shared->camPos.y + 30, shared->camPos.z);
+
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, chunkTbo);
+
+	projview = projection * glm::lookAt(shared->camPos.glm(),
+		shared->camPos.glm() + shared->camDir.glm(), shared->camUp.glm());
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//static double const chunkDiameter = sqrt(World::CSIZE_X*World::CSIZE_X+World::CSIZE_Y*World::CSIZE_Y+World::CSIZE_Z*World::CSIZE_Z);
+
+	glBindTexture(GL_TEXTURE_2D, chunkTbo);
+
+	bool printed = false;
+	chunkGraphics.iterate([&] (ivec3_c &c, ChunkGraphics &cg)
+	{
+		glBindVertexArray(cg.vao);
+		glm::mat4 const &model = chunkTransforms.chunkAt(c);
+		glm::mat4 const &finalTransform = projview * model;
+		glUniformMatrix4fv(uniforms.mvp, 1, false, &finalTransform[0][0]);
+		glUniformMatrix4fv(uniforms.model, 1, false, &model[0][0]);
+
+		/*glm::vec4 projected = projview * glm::vec4(
+			cx + World::CSIZE_X/2.f, cy + World::CSIZE_Y/2.f, cz + World::CSIZE_Z/2.f, 1);
+		projected/= projected.w;
+		float projDiameter = chunkDiameter / projected.w;
+		if (fabsf(projected.x) > 1+projDiameter || fabsf(projected.y) > 1+projDiameter
+			|| projected.z < -projDiameter)
+			return true;*/
+
+		glDrawArrays(GL_TRIANGLES, 0, cg.vertCount);
+		return true;
+	});
+
+	entityGraphics.iterate([&] (int e, EntityGraphics &eg)
+	{
+		if (!eg.created || !shared->physics.entityPhysics[e].created)
+			return true;
+		glBindVertexArray(eg.vao);
+
+		glm::mat4 model;
+		shared->physics.entityPhysics[e].body->getWorldTransform()
+			.getOpenGLMatrix(&model[0][0]);
+		//model = glm::translate(model, (glm::vec3)-shared->pos);
+		glm::mat4 const &finalTransform = projview * model;
+		glUniformMatrix4fv(uniforms.mvp, 1, false, &finalTransform[0][0]);
+		glUniformMatrix4fv(uniforms.model, 1, false, &model[0][0]);
+
+		glBindTexture(GL_TEXTURE_2D, eg.tbo);
+		glDrawArrays(GL_TRIANGLES, 0, eg.vertCount);
+		return true;
+	});
+	checkGLError("render");
+}
+
+template <typename Shared>
+inline bool Module<Shared>::buildChunk(ivec3_c &c)
+{
+	if (!vertexBufFlushed.load())
+		return false;
+	// set data
+	int chunkVertexCount = 0;
+
+	vertexBufLock.lock();
+	shared->blockWriteLock.lock(c);
+	shared->moveLock.lock();
+
+	shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType const &blockType)
+	{
+		if (blockFuncs.isBlockVisible(b))
+		{
+			auto neighbor = [&] (int xoff, int yoff, int zoff)
+				{
+					bool const neighborValid = shared->blockTypes
+						.isValidBlockCoord(b + ivec3(xoff, yoff, zoff));
+
+					bool const neighborVisible = neighborValid
+						? blockFuncs.isBlockVisible(b + ivec3(xoff, yoff, zoff))
+						: false;
+
+					chunkVertexCount+= neighborVisible ? 0 : 6;
+				};
+			neighbor(-1, 0, 0);
+			neighbor(+1, 0, 0);
+			neighbor(0, -1, 0);
+			neighbor(0, +1, 0);
+			neighbor(0, 0, -1);
+			neighbor(0, 0, +1);
+		}
+		return true;
+	});
+
+	vertexBuf.resize(chunkVertexCount);
+	int currChunkVertex = 0;
+	shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType const &blockType)
+	{
+		if (blockFuncs.isBlockVisible(b))
+		{
+			auto addPos = [&] (std::initializer_list<VertexComponent> components)
+				{
+					auto const t = blockFuncs.getBlockTexCoords(b);
+					auto const t1 = t.first, t2 = t.second;
+					auto it = components.begin();
+					while (it != components.end())
+					{
+						vertexBuf[currChunkVertex].x = (b.x-c.x*Shared::CSIZE_X) + *(it++);
+						vertexBuf[currChunkVertex].y = (b.y-c.y*Shared::CSIZE_Y) + *(it++);
+						vertexBuf[currChunkVertex].z = (b.z-c.z*Shared::CSIZE_Z) + *(it++);
+						vertexBuf[currChunkVertex].u = t1.x + *(it++) * t2.x;
+						vertexBuf[currChunkVertex].v = t1.y + *(it++) * t2.y;
+						vertexBuf[currChunkVertex].nx = *(it++);
+						vertexBuf[currChunkVertex].ny = *(it++);
+						vertexBuf[currChunkVertex].nz = *(it++);
+						++currChunkVertex;
+					}
+				};
+
+			auto neighbor = [&] (int xoff, int yoff, int zoff)
+				{
+					bool const neighborValid = shared->blockTypes
+						.isValidBlockCoord(b + ivec3(xoff, yoff, zoff));
+
+					bool const neighborVisible = neighborValid
+						? blockFuncs.isBlockVisible(b + ivec3(xoff, yoff, zoff))
+						: false;
+
+					if (!neighborVisible)
+					{
+						if (xoff != 0)
+						{
+							// from -1 or 1 to 0 or 1
+							VertexComponent const off = (xoff + 1) / 2;
+							if (xoff == -1)
+								addPos({
+									off, 0, 0, 0, 0, -1, 0, 0,
+									off, 1, 1, 1, 1, -1, 0, 0,
+									off, 1, 0, 1, 0, -1, 0, 0,
+
+									off, 0, 0, 0, 0, -1, 0, 0,
+									off, 0, 1, 0, 1, -1, 0, 0,
+									off, 1, 1, 1, 1, -1, 0, 0,
+								});
+							else
+								addPos({
+									off, 1, 1, 1, 1, 1, 0, 0,
+									off, 0, 0, 0, 0, 1, 0, 0,
+									off, 1, 0, 1, 0, 1, 0, 0,
+
+									off, 0, 1, 0, 1, 1, 0, 0,
+									off, 0, 0, 0, 0, 1, 0, 0,
+									off, 1, 1, 1, 1, 1, 0, 0,
+								});
+						}
+
+						else if (yoff != 0)
+						{
+							VertexComponent const off = (yoff + 1) / 2;
+							if (yoff == 1)
+								addPos({
+									0, off, 0, 0, 0, 0, 1, 0,
+									1, off, 1, 1, 1, 0, 1, 0,
+									1, off, 0, 1, 0, 0, 1, 0,
+
+									0, off, 0, 0, 0, 0, 1, 0,
+									0, off, 1, 0, 1, 0, 1, 0,
+									1, off, 1, 1, 1, 0, 1, 0,
+								});
+							else
+								addPos({
+									1, off, 1, 1, 1, 0, -1, 0,
+									0, off, 0, 0, 0, 0, -1, 0,
+									1, off, 0, 1, 0, 0, -1, 0,
+                                                        -
+									0, off, 1, 0, 1, 0, -1, 0,
+									0, off, 0, 0, 0, 0, -1, 0,
+									1, off, 1, 1, 1, 0, -1, 0,
+								});
+						}
+
+						else if (zoff != 0)
+						{
+							VertexComponent const off = (zoff + 1) / 2;
+							if (zoff == 1)
+								addPos({
+									0, 0, off, 0, 0, 0, 0, 1,
+									1, 0, off, 1, 0, 0, 0, 1,
+									1, 1, off, 1, 1, 0, 0, 1,
+
+									0, 1, off, 0, 1, 0, 0, 1,
+									0, 0, off, 0, 0, 0, 0, 1,
+									1, 1, off, 1, 1, 0, 0, 1,
+								});
+							else
+								addPos({
+									1, 0, off, 1, 0, 0, 0, -1,
+									0, 0, off, 0, 0, 0, 0, -1,
+									1, 1, off, 1, 1, 0, 0, -1,
+                                                           -
+									0, 0, off, 0, 0, 0, 0, -1,
+									0, 1, off, 0, 1, 0, 0, -1,
+									1, 1, off, 1, 1, 0, 0, -1,
+								});
+						}
+					}
+				};
+			neighbor(-1, 0, 0);
+			neighbor(+1, 0, 0);
+			neighbor(0, -1, 0);
+			neighbor(0, +1, 0);
+			neighbor(0, 0, -1);
+			neighbor(0, 0, +1);
+		}
+		return true;
+	});
+
+	vertexBufFlushed = false;
+	vertexBufChunk = c;
+	chunkGraphics.chunkAt(c).dirty = false;
+
+	shared->moveLock.unlock();
+	shared->blockWriteLock.unlock(c);
+	vertexBufLock.unlock();
+
+	if (currChunkVertex != chunkVertexCount)
+	{
+		std::stringstream ss;
+		ss << "Asynchronous measurement and acquirement of chunk vertices!\n"
+		   << "Measured " << chunkVertexCount
+		   << ", acquired " << currChunkVertex << " vertices.";
+		Log::error(ss);
+		exit(EXIT_FAILURE);
+	}
+	return true;
+}
+
+}
+
+#endif /* GRAPHICS_HPP_ */
