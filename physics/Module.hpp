@@ -263,7 +263,7 @@ inline void Module<Shared>::update(Time time)
 
 			physics.dirty = false;
 			delete physics.shape;
-			physics.shape = new btCompoundShape();
+			physics.shape = new btCompoundShape(false);
 			physics.body->setCollisionShape(physics.shape);
 			physics.body->getWorldTransform().setOrigin(c.bt()
 				* btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));

@@ -142,8 +142,8 @@ inline Module<Shared>::Module(Shared *shared, float aspect) :
 
 	// shader
 	program.create();
-	program.addShader(GL_VERTEX_SHADER, "shaders/phong_frag.vert", true);
-	program.addShader(GL_FRAGMENT_SHADER, "shaders/phong_frag.frag", true);
+	program.addShader(GL_VERTEX_SHADER, "res/shaders/phong_frag.vert", true);
+	program.addShader(GL_FRAGMENT_SHADER, "res/shaders/phong_frag.frag", true);
 	attributes.vertXYZ = program.getAttribute("vertXYZ");
 	attributes.vertUV = program.getAttribute("vertUV");
 	attributes.vertNormalXYZ = program.getAttribute("vertNormalXYZ");
@@ -170,9 +170,9 @@ inline Module<Shared>::Module(Shared *shared, float aspect) :
 
 	// bind chunk texture
 	sf::Image chunkImg;
-	if (!chunkImg.loadFromFile("chunk.png"))
+	if (!chunkImg.loadFromFile("res/chunk.png"))
 	{
-		Log::error("Cannot open 'chunk.png'");
+		Log::error("Cannot open 'res/chunk.png'");
 		exit(EXIT_FAILURE);
 	}
 

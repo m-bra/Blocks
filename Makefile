@@ -6,7 +6,7 @@ HEADERS+=AppFuncs.hpp Shared.hpp SharedTypes.hpp
 HEADERS+=logic/EntityFuncs.hpp logic/Module.hpp logic/Types.hpp
 HEADERS+=physics/BlockFuncs.hpp physics/EntityFuncs.hpp physics/Module.hpp physics/Types.hpp
 HEADERS+=graphics/BlockFuncs.hpp graphics/EntityFuncs.hpp graphics/Module.hpp graphics/Types.hpp
-CFLAGS= -std=c++0x -I/media/data/Libraries/ubuntu-build/bullet3/src/
+CFLAGS= -ggdb -Og -std=c++0x -I/media/data/Libraries/ubuntu-build/bullet3/src/
 LDFLAGS=-lsfml-graphics -lsfml-window -lsfml-system /usr/local/lib/libGLLpp.a -lGLEW -lGL -lGLU -lBulletDynamics -lBulletCollision -lLinearMath -lpthread
 
 OBJECTS_TMP=$(SOURCES:.cpp=.o)

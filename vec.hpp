@@ -1,10 +1,3 @@
-/*
- * Vector.hpp
- *
- *  Created on: Oct 16, 2014
- *      Author: merlin
- */
-
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
