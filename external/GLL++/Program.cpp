@@ -18,6 +18,11 @@ void gll::Program::addShader(GLenum type, std::string src, bool isFile)
 	if (isFile)
 	{
 		ifstream ifs(src.c_str(), ios::in | ios::binary | ios::ate);
+		if (!ifs.is_open())
+		{
+			cerr << "ERROR: GLL: Cannot open shader: " << src << "\n";
+			exit(EXIT_FAILURE);
+		}
 		ifstream::pos_type size = ifs.tellg();
 		ifs.seekg(0, ios::beg);
 		vector<char> bytes(size);

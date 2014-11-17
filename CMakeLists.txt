@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.4)
 
 project(blocks)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -ggdb -Og")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
@@ -35,7 +35,6 @@ include_directories(${GLM_INCLUDE_DIRS})
 find_package(Bullet REQUIRED)
 set(BLOCKS_LIBS ${BLOCKS_LIBS} ${BULLET_LIBRARIES})
 include_directories(${BULLET_INCLUDE_DIRS})
-message("Bullet include directory: " ${BULLET_INCLUDE_DIRS})
 
 #some thread lib
 find_package (Threads)

@@ -31,7 +31,7 @@ public:
 
 	void onCreate(int e)
 	{
-		shared->graphics.entityGraphics[e].tbo = blockTbo;
+		shared->graphics.entityGraphics[e].tbo = shared->graphics.chunkTbo;
 	}
 
 	void onDestroy(int e)
@@ -121,21 +121,8 @@ public:
 };
 
 template <typename Shared>
-EntityFuncs<Shared>::EntityFuncs(Shared *world, BlockFuncs<Shared> *blockFuncs) : shared(world), blockFuncs(blockFuncs)
+EntityFuncs<Shared>::EntityFuncs(Shared *a_shared, BlockFuncs<Shared> *a_blockFuncs) : shared(a_shared), blockFuncs(a_blockFuncs)
 {
-	sf::Image blockImg;
-	if (!blockImg.loadFromFile("chunk.png"))
-	{
-		Log::error("Cannot open 'chunk.png'");
-		exit(EXIT_FAILURE);
-	}
-
-	glGenTextures(1, &blockTbo);
-	glBindTexture(GL_TEXTURE_2D, blockTbo);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, blockImg.getSize().x, blockImg.getSize().y, 0,
-		GL_RGBA, GL_UNSIGNED_BYTE, blockImg.getPixelsPtr());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
 
 }  // namespace graphics

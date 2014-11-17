@@ -32,6 +32,8 @@ template <typename Shared>
 class Module
 {
 private:
+	friend class EntityFuncs<Shared>;
+
 	template <typename T>
 	using ChunkFieldArray = ChunkFieldArray<typename Shared::ChunkFieldArraySize, T>;
 	template <typename T>

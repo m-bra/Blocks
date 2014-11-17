@@ -100,7 +100,7 @@ inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(share
 	dispatcher = new btCollisionDispatcher(collisionConfig);
 	solver = new btSequentialImpulseConstraintSolver;
 	physicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfig);
-	physicsWorld->setGravity(btVector3(0, -0, 0));
+	physicsWorld->setGravity(btVector3(0, -10, 0));
 
 	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
 	{
