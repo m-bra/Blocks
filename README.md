@@ -1,19 +1,24 @@
+BLOCKS
+======
+
 blocks - a game with blocks!
 
-COMPILE
+
+### COMPILE
 
 This project uses CMake as build system.
+
 If you're on UNIX:
     mkdir build
     cd build
     cmake -G "Unix Makefiles" ..
     make && make install
+
 If you're on Windows:
     switch to Linux, dude!
 
-depends on the following Libraries:
-    GLEW, GLM, Bullet Physics, SFML
-    (+Threads and OpenGL)
+You have to install the following libraries by yourself:
+    BulletPhysics, SFML, GLEW
 
 PLAY
 

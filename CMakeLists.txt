@@ -28,7 +28,7 @@ include_directories(${GLEW_INCLUDE_PATH})
 set(BLOCKS_LIBS ${BLOCKS_LIBS} ${GLEW_LIBRARY})
 
 #glm
-find_package(GLM REQUIRED)
+set(GLM_INCLUDE_DIRS ${CMAKE_SOURCE_DIR})
 include_directories(${GLM_INCLUDE_DIRS})
 
 #bullet

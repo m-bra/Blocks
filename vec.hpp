@@ -53,18 +53,16 @@ struct vec3
 	using ptr = vec3<T> *;
 	using cptr = vec3<T> const *;
 
-	static vec3<T> constexpr X = vec3<T>(1, 0, 0);
-	static vec3<T> constexpr Y = vec3<T>(0, 1, 0);
-	static vec3<T> constexpr Z = vec3<T>(0, 0, 1);
-	static vec3<T> constexpr XY = vec3<T>(1, 1, 0);
-	static vec3<T> constexpr YZ = vec3<T>(0, 1, 1);
-	static vec3<T> constexpr XZ = vec3<T>(1, 0, 1);
-	static vec3<T> constexpr XYZ = vec3<T>(1, 1, 1);
-	static vec3<T> constexpr ZERO = vec3<T>(0, 0, 0);
+	static vec3<T> const X;
+	static vec3<T> const Y;
+	static vec3<T> const Z;
+	static vec3<T> const XY;
+	static vec3<T> const YZ;
+	static vec3<T> const XZ;
+	static vec3<T> const XYZ;
+	static vec3<T> const ZERO;
 
-	T x, y, z;
-
-	constexpr vec3() = default;
+	T x, y, z;onstexpr vec3() = dlt;
 
 	template <typename T1, typename T2, typename T3>
 	constexpr vec3(T1 const &x, T2 const &y, T3 const &z) : x(x), y(y), z(z) {}
@@ -397,20 +395,31 @@ struct vec3
 	}
 };
 
+
+
+
+
+
+
+
+
+
 template <typename T>
-vec3<T> constexpr vec3<T>::X;
+vec3<T> const vec3<T>::X = vec3<T>(1, 0, 0);
 template <typename T>
-vec3<T> constexpr vec3<T>::Y;
+vec3<T> const vec3<T>::Y = vec3<T>(0, 1, 0);
 template <typename T>
-vec3<T> constexpr vec3<T>::Z;
+vec3<T> const vec3<T>::Z = vec3<T>(0, 0, 1);
 template <typename T>
-vec3<T> constexpr vec3<T>::XY;
+vec3<T> const vec3<T>::XY = vec3<T>(1, 1, 0);
 template <typename T>
-vec3<T> constexpr vec3<T>::YZ;
+vec3<T> const vec3<T>::YZ = vec3<T>(0, 1, 1);
 template <typename T>
-vec3<T> constexpr vec3<T>::XZ;
+vec3<T> const vec3<T>::XZ = vec3<T>(1, 0, 1);
 template <typename T>
-vec3<T> constexpr vec3<T>::ZERO;
+vec3<T> const vec3<T>::ZERO = vec3<T>(0, 0, 0);
+template <typename T>
+vec3<T> const vec3<T>::XYZ = vec3<T>(1, 1, 1);
 
 template <typename _T>
 struct atomic_vec3
