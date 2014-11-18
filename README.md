@@ -21,6 +21,8 @@ You have to install the following libraries by yourself:
   * BulletPhysics
   * SFML
   * GLEW
+  * (OpenGL, GLU)
+  * (pthread)
 
 ### PLAY
 

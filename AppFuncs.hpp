@@ -27,7 +27,6 @@ private:
 	sf::Window *window;
 	sf::Vector2i const windowSize;
 	sf::Vector2i const center;
-	class int = 0;
 
 	Shared shared;
 	bool db_pause = false, _running = true;

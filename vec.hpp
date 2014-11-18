@@ -62,7 +62,9 @@ struct vec3
 	static vec3<T> const XYZ;
 	static vec3<T> const ZERO;
 
-	T x, y, z;onstexpr vec3() = dlt;
+	T x, y, z;
+
+	constexpr vec3() = default;
 
 	template <typename T1, typename T2, typename T3>
 	constexpr vec3(T1 const &x, T2 const &y, T3 const &z) : x(x), y(y), z(z) {}

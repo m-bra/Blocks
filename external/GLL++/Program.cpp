@@ -1,11 +1,4 @@
-/*
- * Program.cpp
- *
- *  Created on: Aug 31, 2014
- *      Author: merlin
- */
-
-#include "GLL.hpp"
+#include "GLL/GLL.hpp"
 #include <fstream>
 #include <vector>
 #include <cstdio>
@@ -44,7 +37,7 @@ void gll::Program::addShader(GLenum type, std::string src, bool isFile)
 	if (!compiled)
 	{
 		string log;
-		log.reserve(logLen);
+		log.resize(logLen);
 		glGetShaderInfoLog(shader, logLen, 0, &log[0]);
 		char const *typestr = type == GL_VERTEX_SHADER ?"vertex" :"fragment";
 		cerr << "GLL: ERROR: Failed to compile " <<  typestr << " shader: " << log << "\n";
