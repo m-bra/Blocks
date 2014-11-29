@@ -1,1 +1,5 @@
-Makefile
+.atom-build.json
+.linter-clang-includes
+*.*\~
+src/external/bullet-build
+src/external/SFML-build
