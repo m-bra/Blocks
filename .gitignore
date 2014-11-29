@@ -3,3 +3,5 @@
 *.*\~
 src/external/bullet-build
 src/external/SFML-build
+src/build
+blocks
