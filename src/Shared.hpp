@@ -131,7 +131,7 @@ public:
 
 	void tryMove(ivec3_c &m)
 	{
-		if (!loading && graphics.canMove())
+		if (!loading && graphics.canMove() && physics.canMove())
 			if (moveLock.try_lock())
 			{
 				pos+= m * CSIZE;

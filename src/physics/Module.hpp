@@ -20,7 +20,6 @@
 namespace physics
 {
 
-//template <typename BlockFieldArraySize, typename ChunkFieldArraySize>
 template <typename Shared>
 class Module
 {
@@ -45,6 +44,9 @@ public:
 	std::mutex physicsWorldBlock;
 
 	ChunkFieldArray<ChunkPhysics> chunkPhysics;
+	btCompoundShape *shapeBuf;
+	std::mutex shapeBufLock;
+	ivec3 shapeBufChunk;
 
 	EntityFieldArray<fvec3> entityStartPos;
 	EntityFieldArray<EntityPhysics> entityPhysics;
@@ -62,6 +64,11 @@ public:
 	void processDirtyEntity(int e);
 	void update(Time time);
 	void parallel(Time time);
+
+	bool canMove()
+	{
+		return !shapeBuf;
+	}
 
 	void move(ivec3_c &m)
 	{
@@ -246,25 +253,24 @@ inline void Module<Shared>::parallel(Time time)
 	// update chunks
 	shared->physics.chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
 	{
-		if (physics.dirty)
+		if (physics.dirty && !shapeBuf)
 		{
 			shared->blockWriteLock.lock(c);
 			shared->moveLock.lock();
+			shapeBufLock.lock();
 
-			physics.dirty = false;
-			delete physics.shape;
-			physics.shape = new btCompoundShape(false);
-			physics.body->setCollisionShape(physics.shape);
-			physics.body->getWorldTransform().setOrigin(c.bt()
-			* btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
+			shapeBufChunk = c;
+			shapeBuf = new btCompoundShape(false);
 
-			shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b,
-			BlockType const &type)
+			shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType const &type)
 			{
-				blockFuncs.addBlockShape(c, b, physics.shape);
+				blockFuncs.addBlockShape(c, b, shapeBuf);
 				return true;
 			});
 
+			physics.dirty = false;
+
+			shapeBufLock.unlock();
 			shared->moveLock.unlock();
 			shared->blockWriteLock.unlock(c);
 			return false;
@@ -283,6 +289,21 @@ inline void Module<Shared>::update(Time time)
 			processDirtyEntity(e);
 		return true;
 	});
+	
+	// flush shape buffer
+	if (shapeBuf && shapeBufLock.try_lock())
+	{
+		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
+	
+		delete physics.shape;
+		physics.shape = shapeBuf;
+		shapeBuf = 0;
+		
+		physics.body->setCollisionShape(physics.shape);
+		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
+		shapeBufChunk = ivec3(-1, -1, -1);
+		shapeBufLock.unlock();
+	}
 
 	// update player
 	playerBody->activate();
