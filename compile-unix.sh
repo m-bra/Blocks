@@ -10,8 +10,9 @@ if [ ! -d "bullet-build" ]; then
   echo Compiling Bullet...
   mkdir bullet-build
   cd bullet-build
-  cmake ../bullet -G "Unix Makefiles" -DBUILD_EXTRAS=OFF -DBUILD_DEMOS=OFF
+  cmake ../bullet -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=../bullet-install -DBUILD_EXTRAS=OFF -DBUILD_DEMOS=OFF
   make -j
+  make install
   cd ..
 fi
 
@@ -20,8 +21,9 @@ if [ ! -d "SFML-build" ]; then
   echo Compiling SFML...
   mkdir SFML-build
   cd SFML-build
-  cmake ../SFML -G "Unix Makefiles"
+  cmake ../SFML -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=../SFML-install
   make -j
+  make install
   cd ..
 fi
 
