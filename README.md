@@ -9,11 +9,13 @@ blocks - a game with blocks!
 First, you need to preinstall, which downloads all the dependencies of this project.
 
  * On Debian, Ubuntu or other Debian-based: run preinstall-debian.sh
- * On Mac: Not supported yet :( (but soon!)
+ * On Mac: Should work without preinstalling (?)
  * On Windows: Switch to Linux, dude
  * On BSD: Just kidding!
 
-If your OS is not supported yet, you have to install the dependencies by yourself, which are CMake and a C++ Compiler (for compiling, obviously) and the dependencies of SFML (more info [here](http://www.sfml-dev.org/tutorials.php)).
+If your OS is not supported yet, you have to install the dependencies by yourself, which are CMake and a C++ Compiler (for compiling, obviously) and the dependencies of SFML (more info [here](http://sfml-dev.org/tutorials/2.1/compile-with-cmake.php#installing-dependencies)).
+
+After having all the dependencies, just execute compile-unix.sh on a Unix system (like Linux or Mac OS), and if there are no errors, execute ./blocks!
 
 ### PLAY
 
