@@ -1,10 +1,3 @@
-/*
- * ChunkFieldArray.hpp
- *
- *  Created on: Sep 30, 2014
- *      Author: merlin
- */
-
 #ifndef CHUNKFIELDARRAY_HPP_
 #define CHUNKFIELDARRAY_HPP_
 

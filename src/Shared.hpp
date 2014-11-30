@@ -20,10 +20,10 @@
 class Shared
 {
 public:
-	static int constexpr CCOUNT_X = 8;
-	static int constexpr CCOUNT_Y = 1;
+	static int constexpr CCOUNT_X = 6;
+	static int constexpr CCOUNT_Y = 2;
 	static int constexpr CCOUNT_Z = CCOUNT_X;
-	static int constexpr CSIZE_X = 24;
+	static int constexpr CSIZE_X = 32;
 	static int constexpr CSIZE_Y = 32;
 	static int constexpr CSIZE_Z = CSIZE_X;
 	static ivec3 constexpr CCOUNT = ivec3(CCOUNT_X, CCOUNT_Y, CCOUNT_Z);
@@ -228,12 +228,16 @@ inline void Shared::setBlockType(ivec3 const &b, BlockType type)
 inline bool Shared::onGround()
 {
 	ivec3 feet = physics.playerBody->getWorldTransform().getOrigin();
-	--feet.y;
+	ivec3 check[2] = {feet, feet + ivec3(0, -1, 0)};
 
-	bool const valid = blockTypes.isValidBlockCoord(feet);
-	BlockType type = valid ? blockTypes.blockAt(feet)
-		: BlockType::OUTSIDE;
-	return type == BlockType::GROUND || type == BlockType::GROUND2;
+	for (int i = 0; i < 2; ++i)
+	{
+		bool const valid = blockTypes.isValidBlockCoord(check[i]);
+		BlockType type = valid ? blockTypes.blockAt(check[i]) : BlockType::OUTSIDE;
+		if (type == BlockType::GROUND || type == BlockType::GROUND2)
+			return true;
+	}
+	return false;
 }
 
 

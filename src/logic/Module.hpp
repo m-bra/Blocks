@@ -228,10 +228,10 @@ template <typename Shared>
 inline void Module<Shared>::resetPlayer()
 {
 	btVector3 &playerPos = shared->physics.playerBody->getWorldTransform().getOrigin();
+	int bx = Shared::CCOUNT_X*Shared::CSIZE_X / 2;
+	int bz = Shared::CCOUNT_Z*Shared::CSIZE_Z / 2;
 	for (int i = 0; i < 50; ++i)
 	{
-		int bx = rand() % Shared::CCOUNT_X*Shared::CSIZE_X;
-		int bz = rand() % Shared::CCOUNT_Z*Shared::CSIZE_Z;
 		for (int by = Shared::CCOUNT_Y*Shared::CSIZE_Y-2; by >= 1; --by)
 			if (shared->blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
 			 && shared->blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
@@ -240,13 +240,17 @@ inline void Module<Shared>::resetPlayer()
 				playerPos = btVector3(bx+.5, by+shared->physics.playerHeight/2, bz+.5);
 				return;
 			}
+		bx = rand() % Shared::CCOUNT_X*Shared::CSIZE_X;
+		bz = rand() % Shared::CCOUNT_Z*Shared::CSIZE_Z;
 	}
+	std::cerr << "ERROR: Cannot reset player.\n";
 }
 
 template <typename Shared>
 inline void Module<Shared>::jump()
 {
-	if (shared->onGround())
+	// sometimes doesnt jump although on ground
+	//if (shared->onGround())
 		shared->physics.playerBody->applyCentralImpulse(btVector3(0, 7, 0));
 }
 
