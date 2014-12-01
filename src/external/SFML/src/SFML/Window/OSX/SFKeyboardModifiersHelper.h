@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2012 Marco Antognini (antognini.marco@gmail.com), 
-//                         Laurent Gomila (laurent.gom@gmail.com), 
+// Copyright (C) 2007-2014 Marco Antognini (antognini.marco@gmail.com),
+//                         Laurent Gomila (laurent.gom@gmail.com),
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -44,17 +44,26 @@ namespace sf {
 
 
 ////////////////////////////////////////////////////////////
-/// Set up a SFML key event based on the given modifiers
-/// flags and key code.
-/// 
+/// \brief Initialize the global state (only if needed)
+///
+/// It needs to be called before any event, e.g. in the window constructor.
+///
+////////////////////////////////////////////////////////////
+void initialiseKeyboardHelper(void);
+
+
+////////////////////////////////////////////////////////////
+/// \brief Set up a SFML key event based on the given modifiers flags and key code
+///
 ////////////////////////////////////////////////////////////
 sf::Event::KeyEvent keyEventWithModifiers(NSUInteger modifiers, sf::Keyboard::Key key);
 
 
 ////////////////////////////////////////////////////////////
-/// Handle the state of modifiers keys and send key
-/// release & pressed events to the requester.
-/// 
+/// \brief Handle the state of modifiers keys
+///
+/// Send key released & pressed events to the requester.
+///
 ////////////////////////////////////////////////////////////
 void handleModifiersChanged(NSUInteger modifiers, sf::priv::WindowImplCocoa& requester);
 

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2013 Laurent Gomila (laurent.gom@gmail.com)
+// Copyright (C) 2007-2014 Laurent Gomila (laurent.gom@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -37,7 +37,7 @@ namespace
     {
         if (address == "255.255.255.255")
         {
-            // The broadcast address needs to be handled explicitely,
+            // The broadcast address needs to be handled explicitly,
             // because it is also the value returned by inet_addr on error
             return INADDR_BROADCAST;
         }
@@ -84,7 +84,7 @@ m_address(0)
 {
     // We're using 0 (INADDR_ANY) instead of INADDR_NONE to represent the invalid address,
     // because the latter is also the broadcast address (255.255.255.255); it's ok because
-    // SFML doesn't publicly use INADDR_ANY (it is always used implicitely)
+    // SFML doesn't publicly use INADDR_ANY (it is always used implicitly)
 }
 
 
@@ -148,7 +148,7 @@ IpAddress IpAddress::getLocalAddress()
         return localAddress;
 
     // Connect the socket to localhost on any port
-    sockaddr_in address = priv::SocketImpl::createAddress(ntohl(INADDR_LOOPBACK), 0);
+    sockaddr_in address = priv::SocketImpl::createAddress(ntohl(INADDR_LOOPBACK), 9);
     if (connect(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == -1)
     {
         priv::SocketImpl::close(sock);

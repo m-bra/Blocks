@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2013 Laurent Gomila (laurent.gom@gmail.com)
+// Copyright (C) 2007-2014 Laurent Gomila (laurent.gom@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -30,9 +30,10 @@
 #include <SFML/Audio/ALCheck.hpp>
 #include <SFML/System/Sleep.hpp>
 #include <SFML/System/Err.hpp>
+#include <cstring>
 
 #ifdef _MSC_VER
-    #pragma warning(disable : 4355) // 'this' used in base member initializer list
+    #pragma warning(disable: 4355) // 'this' used in base member initializer list
 #endif
 
 
@@ -45,11 +46,15 @@ namespace sf
 {
 ////////////////////////////////////////////////////////////
 SoundRecorder::SoundRecorder() :
-m_thread     (&SoundRecorder::record, this),
-m_sampleRate (0),
-m_isCapturing(false)
+m_thread            (&SoundRecorder::record, this),
+m_sampleRate        (0),
+m_processingInterval(milliseconds(100)),
+m_isCapturing       (false)
 {
     priv::ensureALInit();
+
+    // Set the device name to the default device
+    m_deviceName = getDefaultDevice();
 }
 
 
@@ -61,28 +66,28 @@ SoundRecorder::~SoundRecorder()
 
 
 ////////////////////////////////////////////////////////////
-void SoundRecorder::start(unsigned int sampleRate)
+bool SoundRecorder::start(unsigned int sampleRate)
 {
     // Check if the device can do audio capture
     if (!isAvailable())
     {
-        err() << "Failed to start capture : your system cannot capture audio data (call SoundRecorder::IsAvailable to check it)" << std::endl;
-        return;
+        err() << "Failed to start capture: your system cannot capture audio data (call SoundRecorder::isAvailable to check it)" << std::endl;
+        return false;
     }
 
     // Check that another capture is not already running
     if (captureDevice)
     {
         err() << "Trying to start audio capture, but another capture is already running" << std::endl;
-        return;
+        return false;
     }
 
     // Open the capture device for capturing 16 bits mono samples
-    captureDevice = alcCaptureOpenDevice(NULL, sampleRate, AL_FORMAT_MONO16, sampleRate);
+    captureDevice = alcCaptureOpenDevice(m_deviceName.c_str(), sampleRate, AL_FORMAT_MONO16, sampleRate);
     if (!captureDevice)
     {
-        err() << "Failed to open the audio capture device" << std::endl;
-        return;
+        err() << "Failed to open the audio capture device with the name: " << m_deviceName << std::endl;
+        return false;
     }
 
     // Clear the array of samples
@@ -100,7 +105,11 @@ void SoundRecorder::start(unsigned int sampleRate)
         // Start the capture in a new thread, to avoid blocking the main thread
         m_isCapturing = true;
         m_thread.launch();
+
+        return true;
     }
+
+    return false;
 }
 
 
@@ -110,6 +119,9 @@ void SoundRecorder::stop()
     // Stop the capturing thread
     m_isCapturing = false;
     m_thread.wait();
+
+    // Notify derived class
+    onStop();
 }
 
 
@@ -121,10 +133,88 @@ unsigned int SoundRecorder::getSampleRate() const
 
 
 ////////////////////////////////////////////////////////////
+std::vector<std::string> SoundRecorder::getAvailableDevices()
+{
+    std::vector<std::string> deviceNameList;
+
+    const ALchar *deviceList = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+    if (deviceList)
+    {
+        while (*deviceList)
+        {
+            deviceNameList.push_back(deviceList);
+            deviceList += std::strlen(deviceList) + 1;
+        }
+    }
+
+    return deviceNameList;
+}
+
+
+////////////////////////////////////////////////////////////
+std::string SoundRecorder::getDefaultDevice()
+{
+    return alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
+}
+
+
+////////////////////////////////////////////////////////////
+bool SoundRecorder::setDevice(const std::string& name)
+{
+    // Store the device name
+    if (name.empty())
+        m_deviceName = getDefaultDevice();
+    else
+        m_deviceName = name;
+
+    if (m_isCapturing)
+    {
+        // Stop the capturing thread
+        m_isCapturing = false;
+        m_thread.wait();
+
+        // Open the requested capture device for capturing 16 bits mono samples
+        captureDevice = alcCaptureOpenDevice(name.c_str(), m_sampleRate, AL_FORMAT_MONO16, m_sampleRate);
+        if (!captureDevice)
+        {
+            // Notify derived class
+            onStop();
+
+            err() << "Failed to open the audio capture device with the name: " << m_deviceName << std::endl;
+            return false;
+        }
+
+        // Start the capture
+        alcCaptureStart(captureDevice);
+
+        // Start the capture in a new thread, to avoid blocking the main thread
+        m_isCapturing = true;
+        m_thread.launch();
+    }
+
+    return true;
+}
+
+
+////////////////////////////////////////////////////////////
+const std::string& SoundRecorder::getDevice() const
+{
+    return m_deviceName;
+}
+
+
+////////////////////////////////////////////////////////////
 bool SoundRecorder::isAvailable()
 {
     return (priv::AudioDevice::isExtensionSupported("ALC_EXT_CAPTURE") != AL_FALSE) ||
            (priv::AudioDevice::isExtensionSupported("ALC_EXT_capture") != AL_FALSE); // "bug" in Mac OS X 10.5 and 10.6
+}
+
+
+////////////////////////////////////////////////////////////
+void SoundRecorder::setProcessingInterval(sf::Time interval)
+{
+    m_processingInterval = interval;
 }
 
 
@@ -152,14 +242,11 @@ void SoundRecorder::record()
         processCapturedSamples();
 
         // Don't bother the CPU while waiting for more captured data
-        sleep(milliseconds(100));
+        sleep(m_processingInterval);
     }
 
-    // Capture is finished : clean up everything
+    // Capture is finished: clean up everything
     cleanup();
-
-    // Notify derived class
-    onStop();
 }
 
 

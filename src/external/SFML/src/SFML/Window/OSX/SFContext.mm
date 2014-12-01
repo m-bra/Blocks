@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2012 Marco Antognini (antognini.marco@gmail.com), 
-//                         Laurent Gomila (laurent.gom@gmail.com), 
+// Copyright (C) 2007-2014 Marco Antognini (antognini.marco@gmail.com),
+//                         Laurent Gomila (laurent.gom@gmail.com),
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -39,51 +39,54 @@ namespace priv
 
 
 ////////////////////////////////////////////////////////////
-SFContext::SFContext(SFContext* shared)
-: m_view(0), m_window(0)
+SFContext::SFContext(SFContext* shared) :
+m_view(0),
+m_window(0)
 {
     // Ask for a pool.
     retainPool();
-    
+
     // Create the context
     createContext(shared,
-                  VideoMode::getDesktopMode().bitsPerPixel, 
+                  VideoMode::getDesktopMode().bitsPerPixel,
                   ContextSettings(0, 0, 0));
 }
 
-    
+
 ////////////////////////////////////////////////////////////
 SFContext::SFContext(SFContext* shared, const ContextSettings& settings,
-                     const WindowImpl* owner, unsigned int bitsPerPixel)
-: m_view(0), m_window(0)
+                     const WindowImpl* owner, unsigned int bitsPerPixel) :
+m_view(0),
+m_window(0)
 {
     // Ask for a pool.
     retainPool();
-    
+
     // Create the context.
     createContext(shared, bitsPerPixel, settings);
-    
+
     // Apply context.
-    WindowImplCocoa const * ownerCocoa = static_cast<WindowImplCocoa const *>(owner);
+    const WindowImplCocoa* ownerCocoa = static_cast<const WindowImplCocoa*>(owner);
     ownerCocoa->applyContext(m_context);
 }
 
 
 ////////////////////////////////////////////////////////////
-SFContext::SFContext(SFContext* shared, const ContextSettings& settings, 
-                     unsigned int width, unsigned int height)
-: m_view(0), m_window(0)
+SFContext::SFContext(SFContext* shared, const ContextSettings& settings,
+                     unsigned int width, unsigned int height) :
+m_view(0),
+m_window(0)
 {
     // Ensure the process is setup in order to create a valid window.
     WindowImplCocoa::setUpProcess();
-    
+
     // Ask for a pool.
     retainPool();
-    
+
     // Create the context.
     createContext(shared, VideoMode::getDesktopMode().bitsPerPixel, settings);
-    
-    // Create a dummy window/view pair (hidden) and asign it our context.
+
+    // Create a dummy window/view pair (hidden) and assign it our context.
     m_window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, width, height)
                                            styleMask:NSBorderlessWindowMask
                                              backing:NSBackingStoreBuffered
@@ -100,10 +103,10 @@ SFContext::~SFContext()
 {
     [m_context clearDrawable];
     [m_context release];
-    
+
     [m_view release]; // Might be nil but we don't care.
     [m_window release]; // Idem.
-    
+
     releasePool();
 }
 
@@ -126,93 +129,119 @@ void SFContext::display()
 ////////////////////////////////////////////////////////////
 void SFContext::setVerticalSyncEnabled(bool enabled)
 {
-    // Make compiler happy
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 1060
-    typedef int GLint;
-#endif
-    
     GLint swapInterval = enabled ? 1 : 0;
-    
+
     [m_context setValues:&swapInterval forParameter:NSOpenGLCPSwapInterval];
 }
 
 
 ////////////////////////////////////////////////////////////
 void SFContext::createContext(SFContext* shared,
-                              unsigned int bitsPerPixel, 
+                              unsigned int bitsPerPixel,
                               const ContextSettings& settings)
 {
-    // Choose the attributs of OGL context.
+    // Choose the attributes of OGL context.
     std::vector<NSOpenGLPixelFormatAttribute> attrs;
-    attrs.reserve(20); // max attributs (estimation).
-    
+    attrs.reserve(20); // max attributes (estimation).
+
     // These casts are safe. C++ is much more strict than Obj-C.
-    
+
     attrs.push_back(NSOpenGLPFAClosestPolicy);
     attrs.push_back(NSOpenGLPFADoubleBuffer);
-    
-    if (bitsPerPixel > 24) {
+
+    if (bitsPerPixel > 24)
+    {
         attrs.push_back(NSOpenGLPFAAlphaSize);
         attrs.push_back((NSOpenGLPixelFormatAttribute)8);
     }
-    
+
     attrs.push_back(NSOpenGLPFADepthSize);
     attrs.push_back((NSOpenGLPixelFormatAttribute)settings.depthBits);
-    
+
     attrs.push_back(NSOpenGLPFAStencilSize);
     attrs.push_back((NSOpenGLPixelFormatAttribute)settings.stencilBits);
-    
-    if (settings.antialiasingLevel > 0) {
-        /* 
-         * Antialiasing techniques are described in the 
+
+    if (settings.antialiasingLevel > 0)
+    {
+        /*
+         * Antialiasing techniques are described in the
          * "OpenGL Programming Guide for Mac OS X" document.
          *
-         * According to this document, the specification currently allows 
+         * According to this document, the specification currently allows
          * only one multisample buffer.
          *
          * The document also states that software renderers should be avoided
          * because antialisaing techniques are very slow with them.
          */
-        
+
         // Prefer multisampling over supersampling
         attrs.push_back(NSOpenGLPFAMultisample);
-        
+
         // Only one buffer is currently available
         attrs.push_back(NSOpenGLPFASampleBuffers);
         attrs.push_back((NSOpenGLPixelFormatAttribute)1);
-        
+
         // Antialiasing level
         attrs.push_back(NSOpenGLPFASamples);
         attrs.push_back((NSOpenGLPixelFormatAttribute)settings.antialiasingLevel);
-        
+
         // No software renderer - only hardware renderer
         attrs.push_back(NSOpenGLPFAAccelerated);
     }
-    
+
+    // Support for OpenGL 3.2 on Mac OS X Lion and later:
+    // SFML 2 Graphics module uses some OpenGL features that are deprecated
+    // in OpenGL 3.2 and that are no more available with core context.
+    // Therefore the Graphics module won't work as expected.
+
+    // 2.x are mapped to 2.1 since Apple only support that legacy version.
+    // >=3.0 are mapped to a 3.2 core profile.
+    bool legacy = settings.majorVersion < 3;
+
+    if (legacy)
+    {
+        attrs.push_back(NSOpenGLPFAOpenGLProfile);
+        attrs.push_back(NSOpenGLProfileVersionLegacy);
+    }
+    else
+    {
+        attrs.push_back(NSOpenGLPFAOpenGLProfile);
+        attrs.push_back(NSOpenGLProfileVersion3_2Core);
+    }
+
     attrs.push_back((NSOpenGLPixelFormatAttribute)0); // end of array
-    
-    // Create the pixel pormat.
+
+    // Create the pixel format.
     NSOpenGLPixelFormat* pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:&attrs[0]];
-    
-    if (pixFmt == nil) {
+
+    if (pixFmt == nil)
+    {
         sf::err() << "Error. Unable to find a suitable pixel format." << std::endl;
         return;
     }
-    
+
     // Use the shared context if one is given.
     NSOpenGLContext* sharedContext = shared != NULL ? shared->m_context : nil;
-    
+
     // Create the context.
     m_context = [[NSOpenGLContext alloc] initWithFormat:pixFmt
                                            shareContext:sharedContext];
-    
-    if (m_context == nil) {
-        sf::err() << "Error. Unable to create the context." << std::endl;
+
+    if (m_context == nil)
+    {
+        sf::err() << "Error. Unable to create the context. Retrying without shared context." << std::endl;
+        m_context = [[NSOpenGLContext alloc] initWithFormat:pixFmt
+                                             shareContext:nil];
+
+        if (m_context == nil)
+            sf::err() << "Error. Unable to create the context." << std::endl;
+        else
+            sf::err() << "Warning. New context created without shared context." << std::endl;
     }
-    
+
     // Free up.
     [pixFmt release];
-    
+
     // Save the settings. (OpenGL version is updated elsewhere.)
     m_settings = settings;
 }
