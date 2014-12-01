@@ -132,7 +132,6 @@ inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(share
 template <typename Shared>
 inline Module<Shared>::~Module()
 {
-	Log::debug("physics/~Module");
 	physicsWorld->removeRigidBody(playerBody);
 	delete playerMotionState;
 	delete playerBody;
@@ -289,16 +288,16 @@ inline void Module<Shared>::update(Time time)
 			processDirtyEntity(e);
 		return true;
 	});
-	
+
 	// flush shape buffer
 	if (shapeBuf && shapeBufLock.try_lock())
 	{
 		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
-	
+
 		delete physics.shape;
 		physics.shape = shapeBuf;
 		shapeBuf = 0;
-		
+
 		physics.body->setCollisionShape(physics.shape);
 		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
 		shapeBufChunk = ivec3(-1, -1, -1);

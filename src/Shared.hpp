@@ -23,7 +23,7 @@ public:
 	static int constexpr CCOUNT_X = 6;
 	static int constexpr CCOUNT_Y = 2;
 	static int constexpr CCOUNT_Z = CCOUNT_X;
-	static int constexpr CSIZE_X = 32;
+	static int constexpr CSIZE_X = 16;
 	static int constexpr CSIZE_Y = 32;
 	static int constexpr CSIZE_Z = CSIZE_X;
 	static ivec3 constexpr CCOUNT = ivec3(CCOUNT_X, CCOUNT_Y, CCOUNT_Z);
@@ -69,6 +69,8 @@ public:
 	logic::Module<Shared> logic;
 	graphics::Module<Shared> graphics;
 
+	std::vector<EntityListener *> entityListeners;
+
 	Time gameTime;
 	bool loading = true;
 
@@ -109,78 +111,92 @@ public:
 			&& logic.entityLogics[e].created;
 	}
 
-	void resizeEntityArrays()
-	{
-		int const size = entityTypes.getCount();
-		int const newSize = 10 + size * 2;
+	void resizeEntityArrays();
+	void tryMove(ivec3_c &m);
+	void update(Time time);
+};
 
-#ifdef RESIZE
-#error ALREADY DEFINED RESIZE
-#endif
-#define RESIZE(X) \
-			assert(size == X.getCount()); \
-			X.resize(newSize);
-
-		RESIZE(physics.entityPhysics);
-		RESIZE(physics.entityStartPos);
-		RESIZE(graphics.entityGraphics);
-		RESIZE(logic.entityLogics);
-		RESIZE(entityTypes);
-#undef RESIZE
-	}
-
-	void tryMove(ivec3_c &m)
-	{
-		if (!loading && graphics.canMove() && physics.canMove())
-			if (moveLock.try_lock())
-			{
-				pos+= m * CSIZE;
-
-				blockTypes.shift(-m);
-				physics.move(m);
-				logic.move(m);
-				graphics.move(m);
-				moveLock.unlock();
-			}
-	}
-
-	void update(Time time)
-	{
-		fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
-		int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
-		int my = 0;
-		int mz = CCOUNT_Z/2 - ppos.z / CSIZE_Z;
-		if (mx != 0 || my != 0 || mz != 0)
-			tryMove(-ivec3(mx, my, mz));
-
-		physics.update(time);
-		logic.update(time);
-		graphics.update(time);
-
-		if (loading)
+inline void Shared::tryMove(ivec3_c &m)
+{
+	if (!loading && graphics.canMove() && physics.canMove())
+		if (moveLock.try_lock())
 		{
-			bool allPhysicsClean = true;
-			physics.chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
-			{
-				if (cp.dirty)
-					allPhysicsClean = false;
+			pos+= m * CSIZE;
+
+			blockTypes.shift(-m);
+			physics.move(m);
+			logic.move(m);
+			graphics.move(m);
+			moveLock.unlock();
+		}
+}
+
+inline void Shared::resizeEntityArrays()
+{
+	int const size = entityTypes.getCount();
+	int const newSize = 10 + size * 2;
+
+	#ifdef RESIZE
+	#error ALREADY DEFINED RESIZE
+	#endif
+	#define RESIZE(X) \
+	assert(size == X.getCount()); \
+	X.resize(newSize);
+
+	RESIZE(physics.entityPhysics);
+	RESIZE(physics.entityStartPos);
+	RESIZE(graphics.entityGraphics);
+	RESIZE(logic.entityLogics);
+	RESIZE(entityTypes);
+	#undef RESIZE
+}
+
+inline void Shared::update(Time time)
+{
+	std::cout << "SHAR_ELC" << entityListeners.size() << "\n";
+
+	fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
+	int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
+	int my = 0;
+	int mz = CCOUNT_Z/2 - ppos.z / CSIZE_Z;
+	if (mx != 0 || my != 0 || mz != 0)
+		tryMove(-ivec3(mx, my, mz));
+
+	physics.update(time);
+	logic.update(time);
+	graphics.update(time);
+
+	std::cout << "Entity Count: " << entityTypes.getCount() << " listeners: " << entityListeners.size() << "\n";
+	for (int e = 0; e < entityTypes.getCount(); ++e)
+		for (EntityListener *el : entityListeners)
+		{
+			Log::debug("e1->onEntityUpdate");
+			el->onEntityUpdate(e, time);
+		}
+
+	if (loading)
+	{
+		bool allPhysicsClean = true;
+		physics.chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
+		{
+			if (cp.dirty)
+				allPhysicsClean = false;
 				return true;
-			});
-			bool allLogicsClean = true;
-			logic.chunkGenerateFlags.iterate([&] (ivec3_c &c, bool &flag)
-			{
-				if (flag)
-					allLogicsClean = false;
-				return true;
-			});
-			if (allPhysicsClean && allLogicsClean)
-			{
+		});
+		bool allLogicsClean = true;
+		logic.chunkGenerateFlags.iterate([&] (ivec3_c &c, bool &flag)
+		{
+			if (flag)
+				allLogicsClean = false;
+			return true;
+		});
+		if (allPhysicsClean && allLogicsClean)
+		{
 				logic.resetPlayer();
 				loading = false;
-			}
 		}
 	}
-};
+}
 
 inline void Shared::setBlockType(ivec3 const &b, BlockType type)
 {
@@ -252,7 +268,8 @@ inline int Shared::createEntity(EntityType aType, fvec3 p, logic::EntityLogics d
 			type = aType;
 			graphics.entityGraphics[e].dirty = true;
 			physics.entityPhysics[e].dirty = true;
-			logic.entityLogics[e].dirty = true;
+			for (EntityListener *el : entityListeners)
+				el->onEntityCreate(e);
 			physics.entityStartPos[e] = p;
 			return false;
 		}
@@ -272,7 +289,8 @@ inline int Shared::createEntity(EntityType aType, fvec3 p, logic::EntityLogics d
 inline void Shared::destroyEntity(int e)
 {
 	entityTypes[e] = EntityType::NONE;
-	logic.entityLogics[e].dirty = true;
+	for (EntityListener *el : entityListeners)
+		el->onEntityDestroy(e);
 	physics.entityPhysics[e].dirty = true;
 	graphics.entityGraphics[e].dirty = true;
 }

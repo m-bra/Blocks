@@ -46,7 +46,6 @@ public:
 
 	~AppFuncs()
 	{
-		Log::debug("~Appfuncs");
 		_running = false;
 		thread.join();
 	}
@@ -65,7 +64,6 @@ public:
 			shared.graphics.parallel(time);
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		Log::debug("Appfuncs::parallel end");
 	}
 
 	bool running()
