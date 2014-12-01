@@ -11,19 +11,24 @@
 #include "../vec.hpp"
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
+#include "../EntityListener.hpp"
+#include "../WorldListener.hpp"
 
 namespace logic
 {
 
 template <typename Shared>
-class EntityFuncs
+class EntityFuncs : public EntityListener, public WorldListener
 {
 private:
 	Shared *shared;
 public:
-	EntityFuncs(Shared *shared) : shared(shared) {};
+	void onWorldCreate(Shared *shared)
+	{
+		this->shared = shared;
+	}
 
-	void onCreate(int e)
+	void onEntityCreate(int e)
 	{
 		EntityType &type = shared->entityTypes[e];
 		EntityLogics &logics = shared->logic.entityLogics[e];
@@ -36,12 +41,7 @@ public:
 		}
 	}
 
-	void onDestroy(int e)
-	{
-
-	}
-
-	void updateEntity(Time time, int e)
+	void onEntityUpdate(int e, Time time)
 	{
 		EntityType &type = shared->entityTypes[e];
 
@@ -126,14 +126,14 @@ public:
 		}
 	}
 
-	void onDropEntity(int e)
+	void onEntityDrop(int e)
 	{
 		// assert type == BLOCK
 		EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
 		data.moveToTarget = false;
 	}
 
-	void onTakeEntity(int e)
+	void onEntityTake(int e)
 	{
 		logic::EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
 		data.moveToTarget = true;

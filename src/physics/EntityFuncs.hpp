@@ -11,18 +11,25 @@
 #include "btBulletDynamicsCommon.h"
 #include "../vec.hpp"
 #include "Types.hpp"
+#include "../EntityListener.hpp"
+#include "../WorldListener.hpp"
 
 namespace physics
 {
 template <typename Shared>
-class EntityFuncs
+class EntityFuncs : public EntityListener, public WorldListener
 {
 	Shared *shared;
 	btBoxShape blockShape;
 public:
-	EntityFuncs(Shared *shared) : shared(shared), blockShape(btVector3(.5, .5, .5)) {};
+	EntityFuncs() : blockShape(btVector3(.5, .5, .5)) {};
 
-	void onCreate(int e)
+	void onWorldCreate(Shared *shared)
+	{
+		this->shared = shared;
+	}
+
+	void onEntityCreate(int e)
 	{
 		EntityPhysics &po = shared->physics.entityPhysics[e];
 
@@ -38,7 +45,7 @@ public:
 		po.body = new btRigidBody(mass, po.motionState, po.shape, inertia);
 	}
 
-	void onDestroy(int e)
+	void onEntityDestroy(int e)
 	{
 		EntityPhysics &po = shared->physics.entityPhysics[e];
 		delete po.motionState;

@@ -100,8 +100,10 @@ public:
 };
 
 template <typename Shared>
-inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(shared), entityFuncs(shared)
+inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(shared)
 {
+	entityFuncs.onWorldCreate(shared);
+
 	broadphase = new btDbvtBroadphase();
 	collisionConfig = new btDefaultCollisionConfiguration();
 	dispatcher = new btCollisionDispatcher(collisionConfig);
@@ -229,7 +231,7 @@ inline void Module<Shared>::processDirtyEntity(int e)
 		if (physics.created)
 		{
 			shared->physics.physicsWorld->removeRigidBody(physics.body);
-			entityFuncs.onDestroy(e);
+			entityFuncs.onEntityDestroy(e);
 			assert(!physics.shape && !physics.motionState && !physics.body);
 			physics.created = false;
 		}
@@ -237,7 +239,7 @@ inline void Module<Shared>::processDirtyEntity(int e)
 	default:
 		if (!physics.created)
 		{
-			entityFuncs.onCreate(e);
+			entityFuncs.onEntityCreate(e);
 			assert(physics.shape && physics.motionState && physics.body);
 			physics.created = true;
 			shared->physics.physicsWorld->addRigidBody(physics.body);

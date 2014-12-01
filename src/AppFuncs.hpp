@@ -119,7 +119,7 @@ public:
 	{
 		float &holdDis = shared.logic.holdDistance;
 		holdDis+= ticks * .5;
-		holdDis = glm::clamp(holdDis, 2.f, shared.logic.reach-1.f);
+		holdDis = glm::clamp(holdDis, 2.f, shared.reach-1.f);
 	}
 
 	void moveEvent(int x, int y)

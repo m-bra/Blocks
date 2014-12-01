@@ -1,1 +1,3 @@
  * When jumping with checking onGround(), it does sometimes not jump though on ground, especially when moving fast!
+ * Generation screwed up - repeating in Y-Axis
+ * Blockfaces at the uppermost top are not meshed
