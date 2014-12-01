@@ -62,7 +62,7 @@ public:
 	void onWorldCreate(Shared *shared);
 	void onWorldUpdate(Time time);
 
-	void onEntityCreate(int e);
+	void onEntityCreate(int e, std::initializer_list<void const *> args);
 	void onEntityDestroy(int e);
 	void onEntityUpdate(int e, Time time);
 	void onEntityArrayResize(int newSize)
@@ -163,13 +163,13 @@ inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 }
 
 template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e)
+inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const*> args)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
 	assert(!logics.created);
 	logics.created = true;
-	entityFuncs.onEntityCreate(e);
+	entityFuncs.onEntityCreate(e, args);
 }
 
 template <typename Shared>
@@ -294,7 +294,8 @@ inline void Module<Shared>::take()
 			if (selectedEntity != -1)
 				std::cerr << "Did select entity AND block simultaneously!\n";
 
-			heldEntity = shared->createEntity(EntityType::BLOCK, b1 + fvec3(.5, .5, .5));
+			fvec3 pos = b1 + fvec3(.5, .5, .5);
+			heldEntity = shared->createEntity(EntityType::BLOCK, {"pos", &pos});
 
 			shared->logic.entityLogics[heldEntity].blockEntity.blockType
 				= shared->blockTypes.blockAt(b1);

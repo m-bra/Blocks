@@ -90,8 +90,8 @@ public:
 				break;
 			case sf::Keyboard::E:
 			{
-				int e = shared.createEntity(EntityType::BLOCK,
-								shared.camPos + shared.camDir * (shared.logic.holdDistance + 1));
+				fvec3 pos = shared.camPos + shared.camDir * (shared.logic.holdDistance + 1);
+				int e = shared.createEntity(EntityType::BLOCK, {"pos", &pos});
 							shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
 			}
 				break;

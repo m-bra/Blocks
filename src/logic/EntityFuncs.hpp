@@ -28,7 +28,7 @@ public:
 		this->shared = shared;
 	}
 
-	void onEntityCreate(int e)
+	void onEntityCreate(int e, std::initializer_list<void const*> ls)
 	{
 		EntityType &type = shared->entityTypes[e];
 		EntityLogics &logics = shared->logic.entityLogics[e];
@@ -112,8 +112,9 @@ public:
 				BlockType &type = shared->blockTypes.blockAt(pos);
 				if (type == BlockType::GROUND || type == BlockType::GROUND2)
 				{
+					fvec3 otherPos = pos - data.dir.normalized() * 2;
 					int otherE = shared->createEntity(EntityType::BLOCK,
-						pos - data.dir.normalized() * 2);
+						{"pos", &otherPos});
 					EntityLogics::BlockEntity &otherData = shared->logic.entityLogics[otherE].blockEntity;
 					otherData.blockType = type;
 					shared->setBlockType(pos, BlockType::AIR);

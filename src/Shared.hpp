@@ -88,6 +88,7 @@ public:
 		worldListeners.push_back(&logic);
 		loadCallbacks.push_back(&logic);
 		chunkListeners.push_back(&logic);
+		chunkListeners.push_back(&physics);
 
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldCreate(this);
@@ -113,7 +114,7 @@ public:
 		entityListeners.push_back(listener);
 	}
 
-	int createEntity(EntityType aType, fvec3 p);
+	int createEntity(EntityType aType, std::initializer_list<void const*> args);
 	void destroyEntity(int e);
 
 	bool getSelectedBlock(ivec3 &b1, ivec3 &b2)
@@ -146,13 +147,12 @@ inline void Shared::tryMove(ivec3_c &m)
 		if (!cl->canMove())
 			canMove = false;
 
-	if (!loading && graphics.canMove() && physics.canMove() && canMove)
+	if (!loading && graphics.canMove() && canMove)
 		if (moveLock.try_lock())
 		{
 			pos+= m * CSIZE;
 
 			blockTypes.shift(-m);
-			physics.move(m);
 			graphics.move(m);
 			for (ChunkListener *cl : chunkListeners)
 				cl->move(m);
@@ -186,21 +186,11 @@ inline void Shared::resizeEntityArrays()
 	int const size = entityTypes.getCount();
 	int const newSize = 10 + size * 2;
 
-	#ifdef RESIZE
-	#error ALREADY DEFINED RESIZE
-	#endif
-	#define RESIZE(X) \
-	assert(size == X.getCount()); \
-	X.resize(newSize);
-
+	entityTypes.resize(newSize);
 	for (EntityListener *el : entityListeners)
 		el->onEntityArrayResize(newSize);
 
-	RESIZE(physics.entityPhysics);
-	RESIZE(physics.entityStartPos);
-	RESIZE(graphics.entityGraphics);
-	RESIZE(entityTypes);
-	#undef RESIZE
+	graphics.entityGraphics.resize(newSize);
 }
 
 inline void Shared::update(Time time)
@@ -309,7 +299,7 @@ inline bool Shared::onGround()
 }
 
 
-inline int Shared::createEntity(EntityType aType, fvec3 p)
+inline int Shared::createEntity(EntityType aType, std::initializer_list<void const *> args)
 {
 	int createdEnt = -1;
 	auto tryCreate = [&] (int e, EntityType &type)
@@ -319,10 +309,8 @@ inline int Shared::createEntity(EntityType aType, fvec3 p)
 			createdEnt = e;
 			type = aType;
 			graphics.entityGraphics[e].dirty = true;
-			physics.entityPhysics[e].dirty = true;
 			for (EntityListener *el : entityListeners)
-				el->onEntityCreate(e);
-			physics.entityStartPos[e] = p;
+				el->onEntityCreate(e, args);
 			return false;
 		}
 		return true;
@@ -343,7 +331,6 @@ inline void Shared::destroyEntity(int e)
 	entityTypes[e] = EntityType::NONE;
 	for (EntityListener *el : entityListeners)
 		el->onEntityDestroy(e);
-	physics.entityPhysics[e].dirty = true;
 	graphics.entityGraphics[e].dirty = true;
 }
 
