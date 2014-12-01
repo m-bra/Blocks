@@ -1,3 +1,10 @@
+/*
+ * Logic.hpp
+ *
+ *  Created on: Aug 30, 2014
+ *      Author: merlin
+ */
+
 #ifndef LOGIC_HPP_
 #define LOGIC_HPP_
 
@@ -22,7 +29,6 @@
 #include "../vec.hpp"
 
 #include "../SharedTypes.hpp"
-#include "../EntityListener.hpp"
 #include "Types.hpp"
 
 #include "EntityFuncs.hpp"
@@ -31,7 +37,7 @@ namespace logic
 {
 
 template <typename Shared>
-class Module : public EntityListener
+class Module
 {
 private:
 	template <typename T>
@@ -53,10 +59,7 @@ public:
 	Module(Shared *shared);
 	~Module();
 
-	virtual void onEntityCreate(int e);
-	virtual void onEntityDestroy(int e);
-	virtual void onEntityUpdate(int e, Time time);
-
+	void processDirtyEntity(int e);
 	void generate(ivec3 const &c);
 	void parallel(Time time);
 	void update(Time time);
@@ -85,10 +88,6 @@ inline Module<Shared>::Module(Shared *shared) :
 	chunkGenerateFlags.fill(true);
 
 	resetPlayer();
-
-	std::cout << "MOD_ELC" << shared->entityListeners.size();
-	shared->entityListeners.push_back(this);
-	std::cout << "MOd_ELC" << shared->entityListeners.size() << "\n";
 }
 
 template <typename Shared>
@@ -158,30 +157,30 @@ inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 }
 
 template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e)
+inline void Module<Shared>::processDirtyEntity(int e)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
-	assert(!logics.created);
-	logics.created = true;
-	entityFuncs.onCreate(e);
-}
+	assert(logics.dirty);
+	logics.dirty = false;
 
-template <typename Shared>
-inline void Module<Shared>::onEntityDestroy(int e)
-{
-	EntityLogics &logics = shared->logic.entityLogics[e];
-
-	assert(logics.created);
-	logics.created = false;
-	entityFuncs.onDestroy(e);
-}
-
-template <typename Shared>
-inline void Module<Shared>::onEntityUpdate(int e, Time time)
-{
-	Log::debug("Entity update");
-	entityFuncs.updateEntity(time, e);
+	switch (shared->entityTypes[e])
+	{
+	case EntityType::NONE:
+		if (logics.created)
+		{
+			entityFuncs.onDestroy(e);
+			logics.created = false;
+		}
+		break;
+	default:
+		if (!logics.created)
+		{
+			logics.created = true;
+			entityFuncs.onCreate(e);
+		}
+		break;
+	}
 }
 
 template <typename Shared>
@@ -202,6 +201,17 @@ template <typename Shared>
 inline void Module<Shared>::update(Time time)
 {
 	shared->gameTime+= time;
+
+	// update entities
+	shared->logic.entityLogics.iterate([&] (int e, EntityLogics &logics)
+	{
+		if (logics.dirty)
+			processDirtyEntity(e);
+
+		if (shared->isEntityCreated(e))
+			entityFuncs.updateEntity(time, e);
+		return true;
+	});
 }
 
 template <typename Shared>
@@ -325,3 +335,4 @@ inline void Module<Shared>::place()
 }
 
 #endif /* LOGIC_HPP_ */
+
