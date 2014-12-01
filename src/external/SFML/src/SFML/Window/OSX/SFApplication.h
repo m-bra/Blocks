@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2012 Marco Antognini (antognini.marco@gmail.com), 
-//                         Laurent Gomila (laurent.gom@gmail.com), 
+// Copyright (C) 2007-2014 Marco Antognini (antognini.marco@gmail.com),
+//                         Laurent Gomila (laurent.gom@gmail.com),
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -26,11 +26,11 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+#import <Foundation/Foundation.h>
 
 ////////////////////////////////////////////////////////////
-/// \brief Event processing
+/// \brief Event processing & Menu bar initialization
 ///
 ////////////////////////////////////////////////////////////
 @interface SFApplication : NSApplication
@@ -44,12 +44,20 @@
 
 
 ////////////////////////////////////////////////////////////
+/// \brief Set up the menu bar and its items
+///
+////////////////////////////////////////////////////////////
++(void)setUpMenuBar;
+
+
+////////////////////////////////////////////////////////////
 /// \brief Dispatch events
 ///
 /// This overload of -[NSApplication sendEvent:] is used to
 /// fix KeyRelease events when the command key is down.
+///
 ////////////////////////////////////////////////////////////
--(void)sendEvent:(NSEvent *)anEvent;
+-(void)sendEvent:(NSEvent*)anEvent;
 
 
 @end

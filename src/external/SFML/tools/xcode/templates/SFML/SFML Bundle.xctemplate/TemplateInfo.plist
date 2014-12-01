@@ -3,7 +3,7 @@
 
 <!--
 SFML - Simple and Fast Multimedia Library
-Copyright (C) 2007-2013 Marco Antognini (antognini.marco@gmail.com),
+Copyright (C) 2007-2014 Marco Antognini (antognini.marco@gmail.com),
                         Laurent Gomila (laurent.gom@gmail.com),
 
 This software is provided 'as-is', without any express or implied warranty.
@@ -55,7 +55,7 @@ subject to the following restrictions:
             <string>___PACKAGENAME___-Info.plist:Content</string>
         </array>
 
-        <!-- 
+        <!--
              DEFINITIONS
          -->
         <key>Definitions</key>
@@ -81,6 +81,8 @@ subject to the following restrictions:
     &lt;string&gt;APPL&lt;/string&gt;
     &lt;key&gt;CFBundleSignature&lt;/key&gt;
     &lt;string&gt;????&lt;/string&gt;
+    &lt;key&gt;NSHighResolutionCapable&lt;/key&gt;
+    &lt;true/&gt;
 &lt;/dict&gt;
 &lt;/plist&gt;
 </string>
@@ -125,6 +127,9 @@ subject to the following restrictions:
                 <dict>
                     <key>INFOPLIST_FILE</key>
                     <string>___PACKAGENAME___/___PACKAGENAME___-Info.plist</string>
+
+                    <key>LD_RUNPATH_SEARCH_PATHS</key>
+                    <string>@loader_path/../Frameworks</string>
                 </dict>
             </dict>
         </array>

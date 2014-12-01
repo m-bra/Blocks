@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2012 Marco Antognini (antognini.marco@gmail.com), 
-//                         Laurent Gomila (laurent.gom@gmail.com), 
+// Copyright (C) 2007-2014 Marco Antognini (antognini.marco@gmail.com),
+//                         Laurent Gomila (laurent.gom@gmail.com),
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -28,9 +28,9 @@
 
 @interface NSString (NSString_stdstring)
 
-+(id)stringWithstdstring:(std::string const &)string;
++(id)stringWithstdstring:(const std::string&)string;
 
-+(id)stringWithstdwstring:(std::wstring const &)string;
++(id)stringWithstdwstring:(const std::wstring&)string;
 
 -(std::string)tostdstring;
 

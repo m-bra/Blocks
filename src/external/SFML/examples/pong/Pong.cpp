@@ -27,7 +27,8 @@ int main()
     float ballRadius = 10.f;
 
     // Create the window of the application
-    sf::RenderWindow window(sf::VideoMode(gameWidth, gameHeight, 32), "SFML Pong");
+    sf::RenderWindow window(sf::VideoMode(gameWidth, gameHeight, 32), "SFML Pong",
+                            sf::Style::Titlebar | sf::Style::Close);
     window.setVerticalSyncEnabled(true);
 
     // Load the sounds used in the game
@@ -165,12 +166,12 @@ int main()
             if (ball.getPosition().x - ballRadius < 0.f)
             {
                 isPlaying = false;
-                pauseMessage.setString("You lost !\nPress space to restart or\nescape to exit");
+                pauseMessage.setString("You lost!\nPress space to restart or\nescape to exit");
             }
             if (ball.getPosition().x + ballRadius > gameWidth)
             {
                 isPlaying = false;
-                pauseMessage.setString("You won !\nPress space to restart or\nescape to exit");
+                pauseMessage.setString("You won!\nPress space to restart or\nescape to exit");
             }
             if (ball.getPosition().y - ballRadius < 0.f)
             {

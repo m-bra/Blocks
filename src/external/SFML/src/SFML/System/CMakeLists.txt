@@ -19,6 +19,7 @@ set(SRC
     ${INCROOT}/Sleep.hpp
     ${SRCROOT}/String.cpp
     ${INCROOT}/String.hpp
+    ${INCROOT}/String.inl
     ${SRCROOT}/Thread.cpp
     ${INCROOT}/Thread.hpp
     ${INCROOT}/Thread.inl
@@ -38,7 +39,7 @@ set(SRC
 source_group("" FILES ${SRC})
 
 # add platform specific sources
-if(WINDOWS)
+if(SFML_OS_WINDOWS)
     set(PLATFORM_SRC
         ${SRCROOT}/Win32/ClockImpl.cpp
         ${SRCROOT}/Win32/ClockImpl.hpp
@@ -65,16 +66,31 @@ else()
         ${SRCROOT}/Unix/ThreadLocalImpl.cpp
         ${SRCROOT}/Unix/ThreadLocalImpl.hpp
     )
+
+    if(SFML_OS_ANDROID)
+        set(PLATFORM_SRC ${PLATFORM_SRC}
+            ${SRCROOT}/Android/Activity.hpp
+            ${SRCROOT}/Android/Activity.cpp
+            ${SRCROOT}/Android/ResourceStream.cpp
+            ${SRCROOT}/Android/ResourceStream.cpp
+        )
+    endif()
+
     source_group("unix" FILES ${PLATFORM_SRC})
 endif()
 
 # build the list of external libraries to link
-set(SYSTEM_EXT_LIBS)
-if(UNIX)
-    set(SYSTEM_EXT_LIBS ${SYSTEM_EXT_LIBS} pthread)
+if(SFML_OS_LINUX OR SFML_OS_FREEBSD OR SFML_OS_MACOSX)
+    list(APPEND SYSTEM_EXT_LIBS pthread)
 endif()
-if(LINUX)
-    set(SYSTEM_EXT_LIBS ${SYSTEM_EXT_LIBS} rt)
+if(SFML_OS_LINUX)
+    list(APPEND SYSTEM_EXT_LIBS rt)
+endif()
+if(SFML_OS_WINDOWS)
+    list(APPEND SYSTEM_EXT_LIBS winmm)
+endif()
+if(SFML_OS_ANDROID)
+    list(APPEND SYSTEM_EXT_LIBS android log)
 endif()
 
 # define the sfml-system target

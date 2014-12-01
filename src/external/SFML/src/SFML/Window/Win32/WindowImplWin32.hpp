@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2013 Laurent Gomila (laurent.gom@gmail.com)
+// Copyright (C) 2007-2014 Laurent Gomila (laurent.gom@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -44,7 +44,7 @@ namespace priv
 ////////////////////////////////////////////////////////////
 class WindowImplWin32 : public WindowImpl
 {
-public :
+public:
 
     ////////////////////////////////////////////////////////////
     /// \brief Construct the window implementation from an existing control
@@ -153,6 +153,21 @@ public :
     ////////////////////////////////////////////////////////////
     virtual void setKeyRepeatEnabled(bool enabled);
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Request the current window to be made the active
+    ///        foreground window
+    ///
+    ////////////////////////////////////////////////////////////
+    virtual void requestFocus();
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Check whether the window has the input focus
+    ///
+    /// \return True if window has focus, false otherwise
+    ///
+    ////////////////////////////////////////////////////////////
+    virtual bool hasFocus() const;
+
 protected:
 
     ////////////////////////////////////////////////////////////
@@ -161,7 +176,7 @@ protected:
     ////////////////////////////////////////////////////////////
     virtual void processEvents();
 
-private :
+private:
 
     ////////////////////////////////////////////////////////////
     /// Register the window class
@@ -194,6 +209,14 @@ private :
     void processEvent(UINT message, WPARAM wParam, LPARAM lParam);
 
     ////////////////////////////////////////////////////////////
+    /// \brief Enables or disables tracking for the mouse cursor leaving the window
+    ///
+    /// \param track True to enable, false to disable
+    ///
+    ////////////////////////////////////////////////////////////
+    void setTracking(bool track);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Convert a Win32 virtual key code to a SFML key code
     ///
     /// \param key   Virtual key code to convert
@@ -203,17 +226,6 @@ private :
     ///
     ////////////////////////////////////////////////////////////
     static Keyboard::Key virtualKeyCodeToSF(WPARAM key, LPARAM flags);
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Check if the current version of the OS supports
-    ///        unicode messages and functions ; Windows 95/98/Me
-    ///        may not support it, whereas Windows NT/2000/XP/Vista
-    ///        will
-    ///
-    /// \return True if the OS supports unicode
-    ///
-    ////////////////////////////////////////////////////////////
-    static bool hasUnicodeSupport();
 
     ////////////////////////////////////////////////////////////
     /// \brief Function called whenever one of our windows receives a message
@@ -237,8 +249,9 @@ private :
     HICON    m_icon;             ///< Custom icon assigned to the window
     bool     m_keyRepeatEnabled; ///< Automatic key-repeat state for keydown events
     Vector2u m_lastSize;         ///< The last handled size of the window
-    bool     m_resizing;         ///< Is the window being resized ?
+    bool     m_resizing;         ///< Is the window being resized?
     Uint16   m_surrogate;        ///< First half of the surrogate pair, in case we're receiving a Unicode character in two events
+    bool     m_mouseInside;      ///< Mouse is inside the window?
 };
 
 } // namespace priv
