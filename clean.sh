@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm -r src/build
-rm blocks
+rm -r -f src/build
+rm -f blocks

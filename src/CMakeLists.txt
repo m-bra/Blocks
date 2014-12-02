@@ -35,7 +35,7 @@ if (WIN32)
   message (FATAL_ERROR Windws not supported yet)
 else (WIN32)
   include_directories(external/GLEW-install/include)
-  set(BLOCKS_STATIC_LIBS ${BLOCKS_LIBS} ${CMAKE_SOURCE_DIR}/external/GLEW-install/libglew.a)
+  set(BLOCKS_LIBS ${BLOCKS_LIBS} ${CMAKE_SOURCE_DIR}/external/GLEW-install/lib/libglew.a)
 endif(WIN32)
 
 # bullet
