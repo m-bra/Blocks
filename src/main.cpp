@@ -3,12 +3,21 @@
 #include "AppFuncs.hpp"
 #include <SFML/Window.hpp>
 
-sf::Window window(sf::VideoMode::getDesktopMode(), "OpenGL", sf::Style::Default, sf::ContextSettings(32, 0, 0, 3, 0));
-AppFuncs appFuncs(&window);
-bool running = true;
-
 int main()
 {
+    sf::ContextSettings settings;
+    settings.depthBits = 32;
+    settings.stencilBits = 0;
+    settings.antialiasingLevel = 4;
+    settings.majorVersion = 3;
+    settings.minorVersion = 2;
+    
+    sf::Window window(sf::VideoMode::getDesktopMode(), "OpenGL", sf::Style::Default, settings);
+    
+    std::cout <<  "Using OpenGL " << settings.majorVersion << "." << settings.majorVersion << "\n";
+    
+    AppFuncs appFuncs(&window);
+    bool running = true;
     window.setVerticalSyncEnabled(true);
 
 	sf::Clock clock;

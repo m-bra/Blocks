@@ -31,13 +31,12 @@ find_package (Threads)
 set(BLOCKS_LIBS ${BLOCKS_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 # glew
-find_package(GLEW)
-if (GLEW_FOUND)
-    include_directories(${GLEW_INCLUDE_PATH})
-    set(BLOCKS_LIBS ${BLOCKS_LIBS} ${GLEW_LIBRARY})
-else (GLEW_FOUND)
-    message(FATAL_ERROR "GLEW not found. Did you use the installers?")
-endif(GLEW_FOUND)
+if (WIN32)
+  message (FATAL_ERROR Windws not supported yet)
+else (WIN32)
+  include_directories(external/GLEW-install/include)
+  set(BLOCKS_STATIC_LIBS ${BLOCKS_LIBS} ${CMAKE_SOURCE_DIR}/external/GLEW-install/libglew.a)
+endif(WIN32)
 
 # bullet
 set(BULLET_ROOT external/bullet-install)

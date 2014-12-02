@@ -5,6 +5,17 @@ cd src
 
 cd external
 
+# GLEW
+if [ ! -d "GLEW-build" ]; then
+  echo Compiling GLEW...
+  mkdir GLEW-build
+  cd GLEW-build
+  cmake ../GLEW -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=../GLEW-install
+  make -j
+  make install
+  cd ..
+fi
+
 # BulletPhysics
 if [ ! -d "bullet-build" ]; then
   echo Compiling Bullet...

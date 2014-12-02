@@ -1,0 +1,7 @@
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/lib/libglew.a
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/lib/libglew.dylib
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/include/GL/glew.h
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/include/GL/glxew.h
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/include/GL/wglew.h
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/bin/glewinfo
+/Users/Noah/Documents/Blocks/src/external/GLEW-install/bin/visualinfo
