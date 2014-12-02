@@ -1,1 +1,0 @@
-/usr/bin/cc   -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/visualinfo.dir/src/visualinfo.c.o  -o bin/visualinfo  lib/libglew.a -framework OpenGL -framework AGL 

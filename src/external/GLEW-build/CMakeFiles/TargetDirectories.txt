@@ -1,4 +1,0 @@
-/Users/Noah/Documents/Blocks/src/external/GLEW-build/CMakeFiles/glewinfo.dir
-/Users/Noah/Documents/Blocks/src/external/GLEW-build/CMakeFiles/libglew_shared.dir
-/Users/Noah/Documents/Blocks/src/external/GLEW-build/CMakeFiles/libglew_static.dir
-/Users/Noah/Documents/Blocks/src/external/GLEW-build/CMakeFiles/visualinfo.dir

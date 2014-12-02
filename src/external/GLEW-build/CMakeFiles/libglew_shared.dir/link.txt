@@ -1,1 +1,0 @@
-/usr/bin/cc   -dynamiclib -Wl,-headerpad_max_install_names   -o lib/libglew.dylib -install_name /Users/Noah/Documents/Blocks/src/external/GLEW-build/lib/libglew.dylib CMakeFiles/libglew_shared.dir/src/glew.c.o -framework OpenGL -framework AGL 
