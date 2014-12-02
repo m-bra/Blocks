@@ -4,6 +4,15 @@ project(blocks)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+<<<<<<< HEAD
+=======
+# only on my machine! :)
+if (IS_DIRECTORY /home/mbra)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g")
+    message("Enabling debugging! Might not work everywhere! To turn off, remove this!")
+endif ()
+
+>>>>>>> d3e28f8... Made CMake produce debug symbols if it sees it's just me :)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
 # GLL++
