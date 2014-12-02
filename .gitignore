@@ -1,9 +1,5 @@
 .atom-build.json
 .linter-clang-includes
 *.*\~
-src/external/bullet-build
-src/external/bullet-install
-src/external/SFML-build
-src/external/SFML-install
-src/build
+build
 blocks
