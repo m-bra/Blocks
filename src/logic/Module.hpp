@@ -18,8 +18,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/noise.hpp>
 
-#include <SFML/System.hpp>
-
 #include <btBulletDynamicsCommon.h>
 
 #include "../Logger.hpp"
@@ -32,6 +30,9 @@
 #include "Types.hpp"
 
 #include "EntityFuncs.hpp"
+
+namespace blocks
+{
 
 namespace logic
 {
@@ -334,5 +335,6 @@ inline void Module<Shared>::place()
 
 }
 
-#endif /* LOGIC_HPP_ */
+}
 
+#endif /* LOGIC_HPP_ */

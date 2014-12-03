@@ -12,6 +12,9 @@
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 
+namespace blocks
+{
+
 namespace logic
 {
 
@@ -143,6 +146,6 @@ public:
 
 }  // namespace logic
 
-
+}
 
 #endif /* ENTITYFUNCS_HPP_ */

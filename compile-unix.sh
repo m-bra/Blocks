@@ -5,8 +5,8 @@ mkdir -p build
 cd build
 
 echo "--- Compiling GLEW ---"
-mkdir -p GLEW; cd GLEW
-cmake ../../src/external/GLEW -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=.
+mkdir -p glew; cd glew
+cmake ../../src/external/glew -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=.
 make -j && make install
 cd ..
 
@@ -16,15 +16,17 @@ cmake ../../src/external/bullet -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=. -DB
 make -j && make install
 cd ..
 
-echo "--- Compiling SFML ---"
-mkdir -p SFML; cd SFML
-cmake ../../src/external/SFML -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=.
-make -j && make install
-cd ..
+# Done in src/CMakeLists.txt with add_subdirectory
+#echo "--- Compiling GLFW ---"
+#mkdir -p glfw3; cd glfw3
+#cmake ../../src/external/glfw3 -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=.
+#make -j && make install
+#cd ..
 
 echo "--- Compiling Blocks ---"
 mkdir -p Blocks
-cmake ../src -G "Unix Makefiles"
+cd Blocks
+cmake ../../src -G "Unix Makefiles"
 make -j
 
 cp blocks ../../

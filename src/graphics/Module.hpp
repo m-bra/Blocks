@@ -13,9 +13,10 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include "../OpenGL.h"
 #include <GLL/GLL.hpp>
-#include "SFML/Graphics.hpp"
+#include <GL/glew.h>
+#include "../CImg.h"
+using namespace cimg_library;
 
 #include "../Logger.hpp"
 #include "../vec.hpp"
@@ -24,6 +25,9 @@
 #include "Types.hpp"
 #include "BlockFuncs.hpp"
 #include "EntityFuncs.hpp"
+
+namespace blocks
+{
 
 namespace graphics
 {
@@ -171,19 +175,38 @@ inline Module<Shared>::Module(Shared *shared, float aspect) :
 	glUniform1f(uniforms.lightPower, 2);
 
 	// bind chunk texture
-	sf::Image chunkImg;
-	if (!chunkImg.loadFromFile("res/chunk.png"))
-	{
-		Log::error("Cannot open 'res/chunk.png'");
-		exit(EXIT_FAILURE);
-	}
+	using ImgComponent = unsigned char;
+	CImg<ImgComponent> chunkImg("res/chunk.png");
+	ImgComponent *pixels = new ImgComponent[chunkImg.width() * chunkImg.height() * 4];
+	if (chunkImg.spectrum() == 4)
+		for (int y = 0; y < chunkImg.height(); ++y)
+			for (int x = 0; x < chunkImg.width(); ++x)
+			{
+				pixels[y * chunkImg.width() * 4 + x * 4 + 0] = chunkImg(x, y, 0);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 1] = chunkImg(x, y, 1);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 2] = chunkImg(x, y, 2);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 3] = chunkImg(x, y, 3);
+			}
+	else if (chunkImg.spectrum() == 3)
+		for (int y = 0; y < chunkImg.height(); ++y)
+			for (int x = 0; x < chunkImg.width(); ++x)
+			{
+				pixels[y * chunkImg.width() * 4 + x * 4 + 0] = chunkImg(x, y, 0);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 1] = chunkImg(x, y, 1);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 2] = chunkImg(x, y, 2);
+				pixels[y * chunkImg.width() * 4 + x * 4 + 3] = 255;
+			}
+	else
+		Log::fatalError("Cannot load chunk.png: 3 or 4 channels required");
 
 	glGenTextures(1, &chunkTbo);
 	glBindTexture(GL_TEXTURE_2D, chunkTbo);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, chunkImg.getSize().x, chunkImg.getSize().y, 0,
-		GL_RGBA, GL_UNSIGNED_BYTE, chunkImg.getPixelsPtr());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, chunkImg.width(), chunkImg.height(), 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	delete[] pixels;
 
 	projection = glm::perspective<float>(glm::radians(60.), aspect, .1, 1000);
 
@@ -573,6 +596,8 @@ inline bool Module<Shared>::buildChunk(ivec3_c &c)
 		exit(EXIT_FAILURE);
 	}
 	return true;
+}
+
 }
 
 }

@@ -11,6 +11,9 @@
 #include "../vec.hpp"
 #include "../SharedTypes.hpp"
 
+namespace blocks
+{
+
 namespace logic
 {
 
@@ -53,7 +56,7 @@ struct EntityLogics
 	}
 };
 }
-
+}
 
 
 #endif /* TYPES_HPP_ */

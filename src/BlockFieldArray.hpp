@@ -11,6 +11,9 @@
 #include <cassert>
 #include "vec.hpp"
 
+namespace blocks
+{
+
 template <int CCX, int CCY, int CCZ, int CSX, int CSY, int CSZ>
 struct BlockFieldArraySize
 {
@@ -258,5 +261,7 @@ public:
 		}
 	}
 };
+
+}
 
 #endif /* FIELDARRAYS_HPP_ */

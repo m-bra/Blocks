@@ -10,6 +10,9 @@
 
 #include <GL/glew.h>
 
+namespace blocks
+{
+
 namespace graphics
 {
 using VertexComponent = float;
@@ -48,6 +51,6 @@ struct EntityGraphics
 	unsigned vertCount;
 };
 }
-
+}
 
 #endif /* TYPES_HPP_ */

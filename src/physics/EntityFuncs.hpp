@@ -12,6 +12,9 @@
 #include "../vec.hpp"
 #include "Types.hpp"
 
+namespace blocks
+{
+
 namespace physics
 {
 template <typename Shared>
@@ -50,7 +53,7 @@ public:
 	}
 };
 }
-
+}
 
 
 #endif /* ENTITYFUNCS_HPP_ */

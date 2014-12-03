@@ -9,12 +9,15 @@
 #define GENTITYFUNCS_HPP_
 
 #include <GL/glew.h>
-#include <SFML/Graphics.hpp>
+#include <GLFW/glfw3.h>
 #include "../vec.hpp"
 
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 #include "BlockFuncs.hpp"
+
+namespace blocks
+{
 
 namespace graphics
 {
@@ -126,7 +129,7 @@ EntityFuncs<Shared>::EntityFuncs(Shared *a_shared, BlockFuncs<Shared> *a_blockFu
 }
 
 }  // namespace graphics
-
+}
 
 
 #endif /* ENTITYFUNCS_HPP_ */

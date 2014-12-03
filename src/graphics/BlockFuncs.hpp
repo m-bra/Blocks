@@ -17,6 +17,9 @@
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 
+namespace blocks
+{
+
 namespace graphics
 {
 
@@ -85,5 +88,6 @@ public:
 };
 
 }  // namespace graphics
+}
 
 #endif /* BLOCKFUNCS_HPP_ */

@@ -8,6 +8,8 @@
 #ifndef TYPES_HPP_
 #define TYPES_HPP_
 
+namespace blocks
+{
 
 namespace physics
 {
@@ -27,6 +29,8 @@ struct ChunkPhysics
 	btMotionState *motionState;
 	btRigidBody *body;
 };
+
+}
 
 }
 
