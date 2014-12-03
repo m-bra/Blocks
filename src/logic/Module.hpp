@@ -107,7 +107,8 @@ inline void Module<Shared>::generate(ivec3_c &c)
 	shared->moveLock.lock();
 	shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType &type)
 	{
-		ivec3 pos = b + shared->pos;
+		ivec3 pos = shared->pos + b;
+		pos.x+= seed * 000;
 
 		float noise = glm::simplex(pos.glm() / 128.f) * .5;
 		noise+= glm::simplex(pos.glm() / 64.f) * .5;
@@ -335,4 +336,3 @@ inline void Module<Shared>::place()
 }
 
 #endif /* LOGIC_HPP_ */
-
