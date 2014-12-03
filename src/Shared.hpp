@@ -23,7 +23,7 @@ public:
 	static int constexpr CCOUNT_X = 6;
 	static int constexpr CCOUNT_Y = 2;
 	static int constexpr CCOUNT_Z = CCOUNT_X;
-	static int constexpr CSIZE_X = 32;
+	static int constexpr CSIZE_X = 16;
 	static int constexpr CSIZE_Y = 32;
 	static int constexpr CSIZE_Z = CSIZE_X;
 	static ivec3 constexpr CCOUNT = ivec3(CCOUNT_X, CCOUNT_Y, CCOUNT_Z);
