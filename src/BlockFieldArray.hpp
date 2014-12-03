@@ -112,7 +112,7 @@ public:
 	template <typename F>
 	bool iterateInChunk(ivec3 const &c, F const &function)
 	{
-		ivec3 const c_b(c.x * CSIZE_X, c.y * CSIZE_Z, c.z * CSIZE_Z);
+		ivec3 const c_b(c.x * CSIZE_X, c.y * CSIZE_Y, c.z * CSIZE_Z);
 
 		ivec3 b;
 		for (b.x = 0; b.x < CSIZE_X; ++b.x)
@@ -128,7 +128,7 @@ public:
 	template <typename F>
 	bool iterateInChunk(ivec3 const &c, F const &function) const
 	{
-		ivec3 const c_b(c.x * CSIZE_X, c.y * CSIZE_Z, c.z * CSIZE_Z);
+		ivec3 const c_b(c.x * CSIZE_X, c.y * CSIZE_Y, c.z * CSIZE_Z);
 
 		ivec3 b;
 		for (b.x = 0; b.x < CSIZE_X; ++b.x)
