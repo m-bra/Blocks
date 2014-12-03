@@ -1,6 +1,9 @@
 #ifndef WORLDTYPES_HPP_
 #define WORLDTYPES_HPP_
 
+namespace blocks
+{
+
 using Time = float;
 
 enum class BlockType : unsigned char
@@ -12,5 +15,7 @@ enum class EntityType : unsigned char
 {
 	NONE, BLOCK, BOT
 };
+
+}
 
 #endif /* WORLDTYPES_HPP_ */

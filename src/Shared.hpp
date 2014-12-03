@@ -17,6 +17,9 @@
 
 #include "SharedTypes.hpp"
 
+namespace blocks
+{
+
 class Shared
 {
 public:
@@ -29,16 +32,16 @@ public:
 	static ivec3 constexpr CCOUNT = ivec3(CCOUNT_X, CCOUNT_Y, CCOUNT_Z);
 	static ivec3 constexpr CSIZE = ivec3(CSIZE_X, CSIZE_Y, CSIZE_Z);
 
-	using BlockFieldArraySize = ::BlockFieldArraySize<CCOUNT_X, CCOUNT_Y, CCOUNT_Z,
+	using BlockFieldArraySize = ::blocks::BlockFieldArraySize<CCOUNT_X, CCOUNT_Y, CCOUNT_Z,
 													  CSIZE_X, CSIZE_Y, CSIZE_Z>;
-	using ChunkFieldArraySize = ::ChunkFieldArraySize<CCOUNT_X, CCOUNT_Y, CCOUNT_Z>;
+	using ChunkFieldArraySize = ::blocks::ChunkFieldArraySize<CCOUNT_X, CCOUNT_Y, CCOUNT_Z>;
 
 	template <typename Field>
-	using BlockFieldArray = ::BlockFieldArray<BlockFieldArraySize, Field>;
+	using BlockFieldArray = ::blocks::BlockFieldArray<BlockFieldArraySize, Field>;
 	template <typename Field>
-	using ChunkFieldArray = ::ChunkFieldArray<ChunkFieldArraySize, Field>;
+	using ChunkFieldArray = ::blocks::ChunkFieldArray<ChunkFieldArraySize, Field>;
 	template <typename Field>
-	using EntityFieldArray = ::EntityFieldArray<Field>;
+	using EntityFieldArray = ::blocks::EntityFieldArray<Field>;
 
 	std::mutex moveLock;
 	struct
@@ -285,5 +288,7 @@ int constexpr Shared::CSIZE_Y;
 int constexpr Shared::CSIZE_Z;
 ivec3 constexpr Shared::CCOUNT;
 ivec3 constexpr Shared::CSIZE;
+
+}
 
 #endif /* WORLD_HPP_ */

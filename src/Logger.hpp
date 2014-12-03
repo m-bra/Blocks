@@ -68,6 +68,12 @@ void log(std::stringstream &ss)
 	log(s);
 }
 
+void log(char const *msg)
+{
+	std::string s(msg);
+	log(s);
+}
+
 void error(std::string const &msg)
 {
 	_log(msg, ERROR);
@@ -77,6 +83,30 @@ void error(std::stringstream &ss)
 {
 	std::string s; ss >> s;
 	error(s);
+}
+
+void error(char const *msg)
+{
+	std::string s(msg);
+	error(s);
+}
+
+void fatalError(std::string const &msg)
+{
+	_log(msg, ERROR);
+	exit(EXIT_FAILURE);
+}
+
+void fatalError(std::stringstream &ss)
+{
+	std::string s; ss >> s;
+	fatalError(s);
+}
+
+void fatalError(char const *msg)
+{
+	std::string s(msg);
+	fatalError(s);
 }
 
 void warning(std::string const &msg)
@@ -90,11 +120,23 @@ void warning(std::stringstream &ss)
 	warning(s);
 }
 
+void warning(char const *msg)
+{
+	std::string s(msg);
+	warning(s);
+}
+
 void debug(std::string const &msg)
 {
 #ifndef LOG_NO_DEBUG
 	_log(msg, DEBUG);
 #endif
+}
+
+void debug(char const *msg)
+{
+	std::string s(msg);
+	debug(s);
 }
 
 void debug(std::stringstream &ss)

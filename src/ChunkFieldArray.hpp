@@ -4,6 +4,9 @@
 #include <cassert>
 #include "vec.hpp"
 
+namespace blocks
+{
+
 template <int CCX, int CCY, int CCZ>
 struct ChunkFieldArraySize
 {
@@ -138,5 +141,7 @@ public:
 		}
 	}
 };
+
+}
 
 #endif /* CHUNKFIELDARRAY_HPP_ */

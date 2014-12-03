@@ -12,6 +12,9 @@
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 
+namespace blocks
+{
+
 namespace physics
 {
 
@@ -51,5 +54,6 @@ public:
 
 }  // namespace physics
 
+}
 
 #endif /* BLOCKFUNCS_HPP_ */

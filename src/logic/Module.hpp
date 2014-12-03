@@ -18,8 +18,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/noise.hpp>
 
-#include <SFML/System.hpp>
-
 #include <btBulletDynamicsCommon.h>
 
 #include "../Logger.hpp"
@@ -32,6 +30,9 @@
 #include "Types.hpp"
 
 #include "EntityFuncs.hpp"
+
+namespace blocks
+{
 
 namespace logic
 {
@@ -331,6 +332,8 @@ inline void Module<Shared>::place()
 		data.target = pos + fvec3(.5, .5, .5);
 		heldEnt = -1;
 	}
+}
+
 }
 
 }

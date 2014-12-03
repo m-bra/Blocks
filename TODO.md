@@ -1,0 +1,4 @@
+ * Include GLEW sources to project so that building it will result in a package that has no further dependencies (now depends on GLEW)
+ * Fog!
+ * Sky!
+ * Optimize meshing: see glescraft

@@ -12,7 +12,8 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include <SFML/Window.hpp>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include "vec.hpp"
 
@@ -21,51 +22,58 @@
 #include "graphics/Module.hpp"
 #include "physics/Module.hpp"
 
+namespace blocks
+{
+
 class AppFuncs
 {
 private:
-	sf::Window *window;
-	sf::Vector2i const windowSize;
-	sf::Vector2i const center;
+	GLFWwindow *window;
 
 	Shared shared;
-	bool db_pause = false, _running = true;
+	bool _running = true;
 	glm::vec3 rotation;
 
-	std::thread thread;
-public:
-	enum ModBits {CONTROL_BIT, SHIFT_BIT, ALT_BIT, SYSTEM_BIT};
+	bool mouseDetached = false;
+	bool moveForward, moveBackward, moveLeft, moveRight;
 
-	AppFuncs(sf::Window *window)
-		: window(window), windowSize(sf::Vector2i(window->getSize())), center(windowSize / 2),
-		  shared((float)windowSize.x / windowSize.y), thread(&AppFuncs::parallel, this)
+	std::thread thread;
+
+	void updateMouseGrab()
 	{
-		sf::Mouse::setPosition(center, *window);
-		window->setKeyRepeatEnabled(false);
+		glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+		//glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_NORMAL);
+	}
+public:
+	AppFuncs(GLFWwindow *window, float aspect)
+		: window(window),
+		  shared(aspect), thread(&AppFuncs::parallel, this)
+	{
+		updateMouseGrab();
+		int w, h;
+		glfwGetWindowSize(window, &w, &h);
+		glfwSetCursorPos(window, w/2, h/2);
 	}
 
 	~AppFuncs()
 	{
-		Log::debug("~Appfuncs");
 		_running = false;
 		thread.join();
 	}
 
 	void parallel()
 	{
-#ifdef NOT_PARALLEL
-#error NOPE
-#endif
-		sf::Clock clock;
+		double lastTime;
 		while (_running)
 		{
-			Time time = clock.restart().asSeconds();
+			double currentTime = glfwGetTime();
+			double time = currentTime - lastTime;
 			shared.logic.parallel(time);
 			shared.physics.parallel(time);
 			shared.graphics.parallel(time);
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			lastTime = currentTime;
 		}
-		Log::debug("Appfuncs::parallel end");
 	}
 
 	bool running()
@@ -73,24 +81,22 @@ public:
 		return _running;
 	}
 
-	void keyEvent(sf::Keyboard::Key key, bool pressed, unsigned mods)
+	void keyEvent(int key, int action, int mods)
 	{
-		if (pressed)
+		if (action == GLFW_PRESS)
 			switch (key)
 			{
-			case sf::Keyboard::Escape:
-				_running = false;
+			case GLFW_KEY_ESCAPE:
+				mouseDetached = !mouseDetached;
+				updateMouseGrab();
 				break;
-			case sf::Keyboard::P:
-				db_pause = !db_pause;
-				break;
-			case sf::Keyboard::Return:
+			case GLFW_KEY_ENTER:
 				shared.logic.resetPlayer();
 				break;
-			case sf::Keyboard::Space:
+			case GLFW_KEY_SPACE:
 				shared.logic.jump();
 				break;
-			case sf::Keyboard::E:
+			case GLFW_KEY_E:
 			{
 				int e = shared.createEntity(EntityType::BLOCK,
 								shared.camPos + shared.camDir * (shared.logic.holdDistance + 1));
@@ -99,43 +105,79 @@ public:
 				break;
 			default:;
 			}
-	}
 
-	void clickEvent(sf::Mouse::Button button, bool pressed, int x, int y)
-	{
-		if (pressed)
+		switch (key)
 		{
-			if (button == sf::Mouse::Left)
-			{
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
-					shared.logic.supertake();
-				else
-					shared.logic.take();
-			}
-			else if (button == sf::Mouse::Right)
-				shared.logic.place();
+		case GLFW_KEY_W:
+		case GLFW_KEY_UP:
+			moveForward = action != GLFW_RELEASE;
+			break;
+		case GLFW_KEY_S:
+		case GLFW_KEY_DOWN:
+			moveBackward = action != GLFW_RELEASE;
+			break;
+		case GLFW_KEY_A:
+		case GLFW_KEY_LEFT:
+			moveLeft = action != GLFW_RELEASE;
+			break;
+		case GLFW_KEY_D:
+		case GLFW_KEY_RIGHT:
+			moveRight = action != GLFW_RELEASE;
+			break;
 		}
 	}
 
-	void scrollEvent(int ticks)
+	void clickEvent(int button, int action, int mods)
+	{
+		if (action == GLFW_PRESS)
+		{
+			if (mouseDetached)
+			{
+				mouseDetached = false;
+				updateMouseGrab();
+				// center the mouse
+				ivec3 center;
+				glfwGetWindowSize(window, &center.x, &center.y);
+				center/= 2;
+				glfwSetCursorPos(window, center.x, center.y);
+			}
+			else
+			{
+				if (button == GLFW_MOUSE_BUTTON_LEFT)
+					shared.logic.take();
+				else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+					shared.logic.place();
+			}
+		}
+	}
+
+	void scrollEvent(double ticks)
 	{
 		float &holdDis = shared.logic.holdDistance;
 		holdDis+= ticks * .5;
 		holdDis = glm::clamp(holdDis, 2.f, shared.logic.reach-1.f);
 	}
 
-	void moveEvent(int x, int y)
+	void moveEvent(double x, double y)
 	{
 
 	}
 
 	void update(float time)
 	{
-		sf::Vector2i mouseDiff = sf::Vector2i(0, 0);
-		if (!db_pause)
+		ivec3 mouseDiff = ivec3(0, 0, 0);
+
+		if (!mouseDetached)
 		{
-			mouseDiff = sf::Vector2i(center - sf::Mouse::getPosition(*window));
-			sf::Mouse::setPosition(center, *window);
+			ivec3 center;
+			glfwGetWindowSize(window, &center.x, &center.y);
+			center/= 2;
+
+			dvec3 mousePos;
+			glfwGetCursorPos(window, &mousePos.x, &mousePos.y);
+
+			mouseDiff = center - mousePos;
+			glfwSetCursorPos(window, center.x, center.y);
 		}
 
 		rotation.x+= mouseDiff.x * time * .2;
@@ -146,14 +188,10 @@ public:
 		glm::vec4 const camUp4 = glm::vec4(0, 1, 0, 0);
 
 		glm::vec3 m;
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-			m.z+= 1;
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-			m.z-= 1;
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-			m.x+= 1;
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-			m.x-= 1;
+		if (moveForward) m.z+= 1;
+		if (moveBackward) m.z-= 1;
+		if (moveRight) m.x+= 1;
+		if (moveLeft) m.x-= 1;
 		shared.logic.setWalk(m);
 
 		glm::mat4 mat = glm::yawPitchRoll(rotation.x, rotation.y, rotation.z);
@@ -161,13 +199,12 @@ public:
 		shared.camLeft = glm::vec3(mat * camLeft4);
 		shared.camUp = glm::vec3(mat * camUp4);
 
-		Time worldTime = shared.secondsToWorldTime(time);
-		shared.update(worldTime);
+		shared.update(time);
 
 		if (shared.loading)
-			window->setTitle("Loading");
+			glfwSetWindowTitle(window, "Loading");
 		else
-			window->setTitle("Blocks");
+			glfwSetWindowTitle(window, "Blocks");
 	}
 
 	void render()
@@ -175,5 +212,7 @@ public:
 		shared.graphics.render();
 	}
 };
+
+}
 
 #endif /* GAME_HPP_ */

@@ -11,6 +11,9 @@
 #include <vector>
 #include <cassert>
 
+namespace blocks
+{
+
 template <typename Field>
 class EntityFieldArray
 {
@@ -128,5 +131,7 @@ public:
 		return array.size();
 	}
 };
+
+}
 
 #endif /* ENTITYFIELDARRAY_HPP_ */
