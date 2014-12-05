@@ -46,7 +46,9 @@ int main()
     // get the best video mode
     int modeCount;
     const GLFWvidmode *modes = glfwGetVideoModes(glfwGetPrimaryMonitor(), &modeCount);
-    GLFWwindow* window = glfwCreateWindow(modes[modeCount - 1].width, modes[modeCount - 1].height, "Blocks", glfwGetPrimaryMonitor(), NULL);
+    int windowWidth = modes[modeCount - 1].width;
+    int windowHeight = modes[modeCount - 1].height;
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", glfwGetPrimaryMonitor(), NULL);
     if (!window)
         Log::fatalError("glfwCreateWindow failed.");
     glfwSetKeyCallback(window, handleGlfwKey);
@@ -57,7 +59,7 @@ int main()
 
     Log::log((char const*) glGetString(GL_VERSION));
 
-    appfuncs = new AppFuncs(window, 4./3.);
+    appfuncs = new AppFuncs(window, float(windowWidth) / windowHeight);
 
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window) && appfuncs->running())
