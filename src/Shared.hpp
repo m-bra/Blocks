@@ -192,8 +192,6 @@ inline void Shared::resizeEntityArrays()
 
 inline void Shared::update(Time time)
 {
-	std::cout << "SHAR_ELC" << entityListeners.size() << "\n";
-
 	fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
 	int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
 	int my = 0;
@@ -206,11 +204,9 @@ inline void Shared::update(Time time)
 		wl->onWorldUpdate(time);
 	graphics.update(time);
 
-	std::cout << "Entity Count: " << entityTypes.getCount() << " listeners: " << entityListeners.size() << "\n";
 	for (int e = 0; e < entityTypes.getCount(); ++e)
 		for (EntityListener *el : entityListeners)
 		{
-			Log::debug("e1->onEntityUpdate");
 			el->onEntityUpdate(e, time);
 		}
 

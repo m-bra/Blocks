@@ -185,7 +185,6 @@ inline void Module<Shared>::onEntityDestroy(int e)
 template <typename Shared>
 inline void Module<Shared>::onEntityUpdate(int e, Time time)
 {
-	Log::debug("Entity update");
 	entityFuncs.onEntityUpdate(time, e);
 }
 
