@@ -24,7 +24,7 @@ namespace blocks
 class Shared
 {
 public:
-	static int constexpr CCOUNT_X = 6;
+	static int constexpr CCOUNT_X = 8;
 	static int constexpr CCOUNT_Y = 2;
 	static int constexpr CCOUNT_Z = CCOUNT_X;
 	static int constexpr CSIZE_X = 16;
