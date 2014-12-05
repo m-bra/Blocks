@@ -84,8 +84,6 @@ inline Module<Shared>::Module(Shared *shared) :
 	shared->camLeft = -fvec3::X;
 	shared->camUp = fvec3::Y;
 
-	seed = time(0) % 10000;
-
 	chunkGenerateFlags.fill(true);
 
 	resetPlayer();
@@ -109,7 +107,6 @@ inline void Module<Shared>::generate(ivec3_c &c)
 	shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType &type)
 	{
 		ivec3 pos = shared->pos + b;
-		pos.x+= seed * 000;
 
 		float noise = glm::simplex(pos.glm() / 128.f) * .5;
 		noise+= glm::simplex(pos.glm() / 64.f) * .5;

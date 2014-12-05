@@ -4,6 +4,7 @@
 #include <iostream>
 #include <atomic>
 #include <mutex>
+#include <ctime>
 #include <glm/glm.hpp>
 
 #include "vec.hpp"
@@ -81,6 +82,8 @@ public:
 	Shared(float aspect) : physics(this), logic(this), graphics(this, aspect)
 	{
 		blockTypes.fill(BlockType::NONE);
+		pos.z = time(0) % 1000;
+		pos.x = (time(0) % 1000000) / 1000;
 	}
 
 	Time secondsToWorldTime(float seconds)
