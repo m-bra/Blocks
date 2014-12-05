@@ -21,6 +21,7 @@ After having all the dependencies, just execute compile-unix.sh on a Unix system
 
 Just go around with W A S D,  
 Left click to take a block, right click to place it.  
-It's so simple.  
+Scroll to move the held block forwards and backwards.
+Escape to enable the mouse.
 
 Oh, and don't be afraid of the red screen at the beginning - it is my super cool and not crappy loading screen, I have been working so hard on it so I hope you like it!
