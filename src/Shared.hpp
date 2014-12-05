@@ -84,10 +84,12 @@ public:
 	Shared(float aspect) : physics(this), graphics(this, aspect)
 	{
 		blockTypes.fill(BlockType::NONE);
-		registerEntityListener(&logic);
+		entityListeners.push_back(&logic);
 		worldListeners.push_back(&logic);
 		loadCallbacks.push_back(&logic);
 		chunkListeners.push_back(&logic);
+
+		entityListeners.push_back(&physics);
 		chunkListeners.push_back(&physics);
 
 		for (WorldListener *wl : worldListeners)
@@ -108,11 +110,6 @@ public:
 	void setBlockType(ivec3::cref b, BlockType type);
 
 	bool onGround();
-
-	void registerEntityListener(EntityListener *listener)
-	{
-		entityListeners.push_back(listener);
-	}
 
 	int createEntity(EntityType aType, std::initializer_list<void const*> args);
 	void destroyEntity(int e);
