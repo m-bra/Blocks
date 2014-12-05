@@ -27,6 +27,10 @@
 #include "../vec.hpp"
 
 #include "../SharedTypes.hpp"
+#include "../EntityListener.hpp"
+#include "../WorldListener.hpp"
+#include "../LoadCallback.hpp"
+#include "../ChunkListener.hpp"
 #include "Types.hpp"
 
 #include "EntityFuncs.hpp"
@@ -38,7 +42,7 @@ namespace logic
 {
 
 template <typename Shared>
-class Module
+class Module : public EntityListener, public WorldListener, public LoadCallback, public ChunkListener
 {
 private:
 	template <typename T>
@@ -55,12 +59,20 @@ public:
 
 	int heldEntity = -1;
 	float holdDistance = 3;
-	float reach = 50;
 
-	Module(Shared *shared);
-	~Module();
+	void onWorldCreate(Shared *shared);
+	void onWorldUpdate(Time time);
 
-	void processDirtyEntity(int e);
+	void onEntityCreate(int e, std::initializer_list<void const *> args);
+	void onEntityDestroy(int e);
+	void onEntityUpdate(int e, Time time);
+	void onEntityArrayResize(int newSize)
+	{
+		entityLogics.resize(newSize);
+	}
+
+	bool doneLoading();
+
 	void generate(ivec3 const &c);
 	void parallel(Time time);
 	void update(Time time);
@@ -77,22 +89,16 @@ public:
 };
 
 template <typename Shared>
-inline Module<Shared>::Module(Shared *shared) :
-	shared(shared), entityFuncs(shared)
+inline void Module<Shared>::onWorldCreate(Shared *a_shared)
 {
+	shared = a_shared;
 	shared->camDir = -fvec3::Y;
 	shared->camLeft = -fvec3::X;
 	shared->camUp = fvec3::Y;
 
 	chunkGenerateFlags.fill(true);
 
-	resetPlayer();
-}
-
-template <typename Shared>
-inline Module<Shared>::~Module()
-{
-
+	entityFuncs.onWorldCreate(shared);
 }
 
 template <typename Shared>
@@ -156,30 +162,42 @@ inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 }
 
 template <typename Shared>
-inline void Module<Shared>::processDirtyEntity(int e)
+inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const*> args)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
-	assert(logics.dirty);
-	logics.dirty = false;
+	assert(!logics.created);
+	logics.created = true;
+	entityFuncs.onEntityCreate(e, args);
+}
 
-	switch (shared->entityTypes[e])
+template <typename Shared>
+inline void Module<Shared>::onEntityDestroy(int e)
+{
+	EntityLogics &logics = shared->logic.entityLogics[e];
+
+	assert(logics.created);
+	logics.created = false;
+	entityFuncs.onEntityDestroy(e);
+}
+
+template <typename Shared>
+inline void Module<Shared>::onEntityUpdate(int e, Time time)
+{
+	entityFuncs.onEntityUpdate(e, time);
+}
+
+template <typename Shared>
+inline bool Module<Shared>::doneLoading()
+{
+	bool result = true;
+	chunkGenerateFlags.iterate([&] (ivec3_c &c, bool &flag)
 	{
-	case EntityType::NONE:
-		if (logics.created)
-		{
-			entityFuncs.onDestroy(e);
-			logics.created = false;
-		}
-		break;
-	default:
-		if (!logics.created)
-		{
-			logics.created = true;
-			entityFuncs.onCreate(e);
-		}
-		break;
-	}
+		if (flag)
+			result = false;
+		return true;
+	});
+	return result;
 }
 
 template <typename Shared>
@@ -197,20 +215,9 @@ inline void Module<Shared>::parallel(Time time)
 }
 
 template <typename Shared>
-inline void Module<Shared>::update(Time time)
+inline void Module<Shared>::onWorldUpdate(Time time)
 {
 	shared->gameTime+= time;
-
-	// update entities
-	shared->logic.entityLogics.iterate([&] (int e, EntityLogics &logics)
-	{
-		if (logics.dirty)
-			processDirtyEntity(e);
-
-		if (shared->isEntityCreated(e))
-			entityFuncs.updateEntity(time, e);
-		return true;
-	});
 }
 
 template <typename Shared>
@@ -275,7 +282,7 @@ inline void Module<Shared>::take()
 	{
 		btRigidBody *body = shared->physics.entityPhysics[heldEntity].body;
 		body->applyCentralImpulse(shared->camDir.bt() * 10 / body->getInvMass());
-		entityFuncs.onDropEntity(heldEntity);
+		entityFuncs.onEntityDrop(heldEntity);
 		heldEntity = -1;
 	}
 	else
@@ -285,12 +292,13 @@ inline void Module<Shared>::take()
 			if (selectedEntity != -1)
 				std::cerr << "Did select entity AND block simultaneously!\n";
 
-			heldEntity = shared->createEntity(EntityType::BLOCK, b1 + fvec3(.5, .5, .5));
+			fvec3 pos = b1 + fvec3(.5, .5, .5);
+			heldEntity = shared->createEntity(EntityType::BLOCK, {"pos", &pos});
 
 			shared->logic.entityLogics[heldEntity].blockEntity.blockType
 				= shared->blockTypes.blockAt(b1);
 
-			entityFuncs.onTakeEntity(heldEntity);
+			entityFuncs.onEntityTake(heldEntity);
 
 			shared->setBlockType(b1, BlockType::AIR);
 		}
@@ -298,7 +306,7 @@ inline void Module<Shared>::take()
 		{
 			heldEntity = selectedEntity;
 			if (selectedEntity != -1)
-				 entityFuncs.onTakeEntity(heldEntity);
+				 entityFuncs.onEntityTake(heldEntity);
 		}
 	}
 }
@@ -312,7 +320,7 @@ inline void Module<Shared>::supertake()
 		btRigidBody *body = shared->physics.entityPhysics[heldEntity].body;
 		glm::vec3 impulse = -glm::mix(shared->camDir.glm(), shared->camLeft.glm(), .3) * 30.f;
 		body->applyCentralImpulse(fvec3(impulse).bt());
-		entityFuncs.onDropEntity(heldEntity);
+		entityFuncs.onEntityDrop(heldEntity);
 		heldEntity = -1;
 	}
 }

@@ -87,9 +87,16 @@ public:
 			switch (key)
 			{
 			case GLFW_KEY_ESCAPE:
+			{
 				mouseDetached = !mouseDetached;
+				// center the mouse
+				ivec3 center;
+				glfwGetWindowSize(window, &center.x, &center.y);
+				center/= 2;
+				glfwSetCursorPos(window, center.x, center.y);
 				updateMouseGrab();
 				break;
+			}
 			case GLFW_KEY_ENTER:
 				shared.logic.resetPlayer();
 				break;
@@ -98,8 +105,8 @@ public:
 				break;
 			case GLFW_KEY_E:
 			{
-				int e = shared.createEntity(EntityType::BLOCK,
-								shared.camPos + shared.camDir * (shared.logic.holdDistance + 1));
+				fvec3 pos = shared.camPos + shared.camDir * (shared.logic.holdDistance + 1);
+				int e = shared.createEntity(EntityType::BLOCK, {"pos", &pos});
 							shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
 			}
 				break;
@@ -155,7 +162,7 @@ public:
 	{
 		float &holdDis = shared.logic.holdDistance;
 		holdDis+= ticks * .5;
-		holdDis = glm::clamp(holdDis, 2.f, shared.logic.reach-1.f);
+		holdDis = glm::clamp(holdDis, 2.f, shared.reach-1.f);
 	}
 
 	void moveEvent(double x, double y)

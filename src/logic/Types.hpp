@@ -19,7 +19,7 @@ namespace logic
 
 struct EntityLogics
 {
-	bool dirty, created;
+	bool created;
 
 	struct BlockEntity
 	{

@@ -73,17 +73,41 @@ public:
 	logic::Module<Shared> logic;
 	graphics::Module<Shared> graphics;
 
+	std::vector<WorldListener *> worldListeners;
+	std::vector<EntityListener *> entityListeners;
+	std::vector<LoadCallback *> loadCallbacks;
+	std::vector<ChunkListener *> chunkListeners;
+
 	Time gameTime;
 	bool loading = true;
 
 	fvec3 camPos, camDir, camLeft, camUp;
+	float reach = 50;
 	int playerEntity;
 
-	Shared(float aspect) : physics(this), logic(this), graphics(this, aspect)
+	Shared(float aspect) : physics(this), graphics(this, aspect)
 	{
 		blockTypes.fill(BlockType::NONE);
+
 		pos.z = time(0) % 1000;
 		pos.x = (time(0) % 1000000) / 1000;
+
+		entityListeners.push_back(&logic);
+		worldListeners.push_back(&logic);
+		loadCallbacks.push_back(&logic);
+		chunkListeners.push_back(&logic);
+
+		entityListeners.push_back(&physics);
+		chunkListeners.push_back(&physics);
+
+		for (WorldListener *wl : worldListeners)
+			wl->onWorldCreate(this);
+	}
+
+	~Shared()
+	{
+		for (WorldListener *wl : worldListeners)
+			wl->onWorldDestroy();
 	}
 
 	Time secondsToWorldTime(float seconds)
@@ -95,98 +119,127 @@ public:
 
 	bool onGround();
 
-	int createEntity(EntityType aType, fvec3 p, logic::EntityLogics data = logic::EntityLogics());
+	int createEntity(EntityType aType, std::initializer_list<void const*> args);
 	void destroyEntity(int e);
 
 	bool getSelectedBlock(ivec3 &b1, ivec3 &b2)
 	{
-		return physics.getSelectedBlock(camPos, camPos + camDir * logic.reach, b1, b2);
+		return physics.getSelectedBlock(camPos, camPos + camDir * reach, b1, b2);
 	}
 
 	int getSelectedEntity()
 	{
-		return physics.getSelectedEntity(camPos, camPos + camDir * logic.reach);
+		return physics.getSelectedEntity(camPos, camPos + camDir * reach);
 	}
 
 	bool isEntityCreated(int e)
 	{
 		return physics.entityPhysics[e].created
-			&& graphics.entityGraphics[e].created
-			&& logic.entityLogics[e].created;
+			&& graphics.entityGraphics[e].created;
 	}
 
-	void resizeEntityArrays()
-	{
-		int const size = entityTypes.getCount();
-		int const newSize = 10 + size * 2;
+	void resetPlayer();
 
-#ifdef RESIZE
-#error ALREADY DEFINED RESIZE
-#endif
-#define RESIZE(X) \
-			assert(size == X.getCount()); \
-			X.resize(newSize);
+	void resizeEntityArrays();
+	void tryMove(ivec3_c &m);
+	void update(Time time);
+};
 
-		RESIZE(physics.entityPhysics);
-		RESIZE(physics.entityStartPos);
-		RESIZE(graphics.entityGraphics);
-		RESIZE(logic.entityLogics);
-		RESIZE(entityTypes);
-#undef RESIZE
-	}
+inline void Shared::tryMove(ivec3_c &m)
+{
+	bool canMove = true;
+	for (ChunkListener *cl : chunkListeners)
+		if (!cl->canMove())
+			canMove = false;
 
-	void tryMove(ivec3_c &m)
-	{
-		if (!loading && graphics.canMove() && physics.canMove())
-			if (moveLock.try_lock())
-			{
-				pos+= m * CSIZE;
-
-				blockTypes.shift(-m);
-				physics.move(m);
-				logic.move(m);
-				graphics.move(m);
-				moveLock.unlock();
-			}
-	}
-
-	void update(Time time)
-	{
-		fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
-		int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
-		int my = 0;
-		int mz = CCOUNT_Z/2 - ppos.z / CSIZE_Z;
-		if (mx != 0 || my != 0 || mz != 0)
-			tryMove(-ivec3(mx, my, mz));
-
-		physics.update(time);
-		logic.update(time);
-		graphics.update(time);
-
-		if (loading)
+	if (!loading && graphics.canMove() && canMove)
+		if (moveLock.try_lock())
 		{
-			bool allPhysicsClean = true;
-			physics.chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
-			{
-				if (cp.dirty)
-					allPhysicsClean = false;
-				return true;
-			});
-			bool allLogicsClean = true;
-			logic.chunkGenerateFlags.iterate([&] (ivec3_c &c, bool &flag)
-			{
-				if (flag)
-					allLogicsClean = false;
-				return true;
-			});
-			if (allPhysicsClean && allLogicsClean)
-			{
-				logic.resetPlayer();
-				loading = false;
+			pos+= m * CSIZE;
+
+			blockTypes.shift(-m);
+			graphics.move(m);
+			for (ChunkListener *cl : chunkListeners)
+				cl->move(m);
+			moveLock.unlock();
+		}
+}
+
+inline void Shared::resetPlayer()
+{
+	btVector3 &playerPos = physics.playerBody->getWorldTransform().getOrigin();
+	int bx = CCOUNT_X*CSIZE_X / 2;
+	int bz = CCOUNT_Z*CSIZE_Z / 2;
+	for (int i = 0; i < 50; ++i)
+		{
+			for (int by = CCOUNT_Y*CSIZE_Y-2; by >= 1; --by)
+				if (blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
+					&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
+					&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
+					{
+						playerPos = btVector3(bx+.5, by+physics.playerHeight/2, bz+.5);
+						return;
+					}
+					bx = rand() % CCOUNT_X*CSIZE_X;
+					bz = rand() % CCOUNT_Z*CSIZE_Z;
+				}
+				std::cerr << "ERROR: Cannot reset player.\n";
 			}
+
+inline void Shared::resizeEntityArrays()
+{
+	int const size = entityTypes.getCount();
+	int const newSize = 10 + size * 2;
+
+	entityTypes.resize(newSize);
+	for (EntityListener *el : entityListeners)
+		el->onEntityArrayResize(newSize);
+
+	graphics.entityGraphics.resize(newSize);
+}
+
+inline void Shared::update(Time time)
+{
+	fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
+	int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
+	int my = 0;
+	int mz = CCOUNT_Z/2 - ppos.z / CSIZE_Z;
+	if (mx != 0 || my != 0 || mz != 0)
+		tryMove(-ivec3(mx, my, mz));
+
+	physics.update(time);
+	for (WorldListener *wl : worldListeners)
+		wl->onWorldUpdate(time);
+	graphics.update(time);
+
+	for (int e = 0; e < entityTypes.getCount(); ++e)
+		for (EntityListener *el : entityListeners)
+		{
+			el->onEntityUpdate(e, time);
+		}
+
+	if (loading)
+	{
+		bool allPhysicsClean = true;
+		physics.chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
+		{
+			if (cp.dirty)
+				allPhysicsClean = false;
+				return true;
+		});
+
+		bool allDone = true;
+		for (LoadCallback *loadcb : loadCallbacks)
+			if (!loadcb->doneLoading())
+				allDone = false;
+
+		if (allPhysicsClean && allDone)
+		{
+				resetPlayer();
+				loading = false;
 		}
 	}
-};
+}
 
 inline void Shared::setBlockType(ivec3 const &b, BlockType type)
 {
@@ -247,7 +300,7 @@ inline bool Shared::onGround()
 }
 
 
-inline int Shared::createEntity(EntityType aType, fvec3 p, logic::EntityLogics data)
+inline int Shared::createEntity(EntityType aType, std::initializer_list<void const *> args)
 {
 	int createdEnt = -1;
 	auto tryCreate = [&] (int e, EntityType &type)
@@ -257,9 +310,8 @@ inline int Shared::createEntity(EntityType aType, fvec3 p, logic::EntityLogics d
 			createdEnt = e;
 			type = aType;
 			graphics.entityGraphics[e].dirty = true;
-			physics.entityPhysics[e].dirty = true;
-			logic.entityLogics[e].dirty = true;
-			physics.entityStartPos[e] = p;
+			for (EntityListener *el : entityListeners)
+				el->onEntityCreate(e, args);
 			return false;
 		}
 		return true;
@@ -278,8 +330,8 @@ inline int Shared::createEntity(EntityType aType, fvec3 p, logic::EntityLogics d
 inline void Shared::destroyEntity(int e)
 {
 	entityTypes[e] = EntityType::NONE;
-	logic.entityLogics[e].dirty = true;
-	physics.entityPhysics[e].dirty = true;
+	for (EntityListener *el : entityListeners)
+		el->onEntityDestroy(e);
 	graphics.entityGraphics[e].dirty = true;
 }
 

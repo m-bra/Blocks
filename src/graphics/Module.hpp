@@ -361,7 +361,7 @@ inline void Module<Shared>::render()
 	program.bind();
 
 	glUniform3f(uniforms.eyePosXYZ, shared->camPos.x, shared->camPos.y, shared->camPos.z);
-	glUniform3f(uniforms.lightXYZ,  shared->camPos.x, shared->camPos.y + 30, shared->camPos.z);
+	glUniform3f(uniforms.lightXYZ,  shared->camPos.x, shared->camPos.y + 200, shared->camPos.z);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, chunkTbo);

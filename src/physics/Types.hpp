@@ -16,7 +16,7 @@ namespace physics
 
 struct EntityPhysics
 {
-	bool dirty = false, created = false;
+	bool created = false;
 	btCollisionShape *shape = 0;
 	btMotionState *motionState = 0;
 	btRigidBody *body = 0;

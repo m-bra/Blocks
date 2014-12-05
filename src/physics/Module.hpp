@@ -13,6 +13,9 @@
 #include "../EntityFieldArray.hpp"
 #include "../vec.hpp"
 
+#include "../ChunkListener.hpp"
+#include "../EntityListener.hpp"
+
 #include "Types.hpp"
 #include "EntityFuncs.hpp"
 #include "BlockFuncs.hpp"
@@ -24,7 +27,7 @@ namespace physics
 {
 
 template <typename Shared>
-class Module
+class Module : public ChunkListener, public EntityListener
 {
 private:
 	template <typename T>
@@ -51,7 +54,6 @@ public:
 	std::mutex shapeBufLock;
 	ivec3 shapeBufChunk;
 
-	EntityFieldArray<fvec3> entityStartPos;
 	EntityFieldArray<EntityPhysics> entityPhysics;
 
 	btCollisionShape *playerShape;
@@ -62,6 +64,11 @@ public:
 
 	Module(Shared *shared);
 	~Module();
+
+	void onEntityCreate(int e, std::initializer_list<void const*> args);
+	void onEntityDestroy(int e);
+	void onEntityArrayResize(int newSize);
+
 	bool getSelectedBlock(fvec3::cref from, fvec3::cref to, ivec3 &b1, ivec3 &b2);
 	int getSelectedEntity(fvec3::cref from, fvec3::cref to);
 	void processDirtyEntity(int e);
@@ -103,8 +110,10 @@ public:
 };
 
 template <typename Shared>
-inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(shared), entityFuncs(shared)
+inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(shared)
 {
+	entityFuncs.onWorldCreate(shared);
+
 	broadphase = new btDbvtBroadphase();
 	collisionConfig = new btDefaultCollisionConfiguration();
 	dispatcher = new btCollisionDispatcher(collisionConfig);
@@ -135,7 +144,6 @@ inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(share
 template <typename Shared>
 inline Module<Shared>::~Module()
 {
-	Log::debug("physics/~Module");
 	physicsWorld->removeRigidBody(playerBody);
 	delete playerMotionState;
 	delete playerBody;
@@ -219,35 +227,33 @@ inline void Module<Shared>::destroyChunk(ivec3_c &c)
 }
 
 template <typename Shared>
-inline void Module<Shared>::processDirtyEntity(int e)
+inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const*> args)
 {
 	EntityPhysics &physics = shared->physics.entityPhysics[e];
-	EntityType &type = shared->entityTypes[e];
 
-	assert(physics.dirty);
-	physics.dirty = false;
+	assert (!physics.created);
+	entityFuncs.onEntityCreate(e, args);
+	assert(physics.shape && physics.motionState && physics.body);
+	physics.created = true;
+	shared->physics.physicsWorld->addRigidBody(physics.body);
+}
 
-	switch (type)
-	{
-	case EntityType::NONE:
-		if (physics.created)
-		{
-			shared->physics.physicsWorld->removeRigidBody(physics.body);
-			entityFuncs.onDestroy(e);
-			assert(!physics.shape && !physics.motionState && !physics.body);
-			physics.created = false;
-		}
-		break;
-	default:
-		if (!physics.created)
-		{
-			entityFuncs.onCreate(e);
-			assert(physics.shape && physics.motionState && physics.body);
-			physics.created = true;
-			shared->physics.physicsWorld->addRigidBody(physics.body);
-		}
-		break;
-	}
+template <typename Shared>
+inline void Module<Shared>::onEntityDestroy(int e)
+{
+	EntityPhysics &physics = shared->physics.entityPhysics[e];
+
+	assert(physics.created);
+	shared->physics.physicsWorld->removeRigidBody(physics.body);
+	entityFuncs.onEntityDestroy(e);
+	assert(!physics.shape && !physics.motionState && !physics.body);
+	physics.created = false;
+}
+
+template <typename Shared>
+inline void Module<Shared>::onEntityArrayResize(int newSize)
+{
+	entityPhysics.resize(newSize);
 }
 
 template <typename Shared>
@@ -285,14 +291,6 @@ inline void Module<Shared>::parallel(Time time)
 template <typename Shared>
 inline void Module<Shared>::update(Time time)
 {
-	// update entities
-	shared->physics.entityPhysics.iterate([&] (int e, EntityPhysics &po)
-	{
-		if (po.dirty)
-			processDirtyEntity(e);
-		return true;
-	});
-
 	// flush shape buffer
 	if (shapeBuf && shapeBufLock.try_lock())
 	{
@@ -314,7 +312,7 @@ inline void Module<Shared>::update(Time time)
 	playerBody->applyCentralForce(shared->physics.playerForce.bt());
 
 	//if (!shared->loading)
-		physicsWorld->stepSimulation(time, 5);
+	physicsWorld->stepSimulation(time, 5);
 }
 }
 }

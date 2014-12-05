@@ -11,6 +11,9 @@
 #include "../vec.hpp"
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
+#include "../EntityListener.hpp"
+#include "../WorldListener.hpp"
+#include <sstream>
 
 namespace blocks
 {
@@ -19,14 +22,17 @@ namespace logic
 {
 
 template <typename Shared>
-class EntityFuncs
+class EntityFuncs : public EntityListener, public WorldListener
 {
 private:
 	Shared *shared;
 public:
-	EntityFuncs(Shared *shared) : shared(shared) {};
+	void onWorldCreate(Shared *shared)
+	{
+		this->shared = shared;
+	}
 
-	void onCreate(int e)
+	void onEntityCreate(int e, std::initializer_list<void const*> ls)
 	{
 		EntityType &type = shared->entityTypes[e];
 		EntityLogics &logics = shared->logic.entityLogics[e];
@@ -39,17 +45,14 @@ public:
 		}
 	}
 
-	void onDestroy(int e)
-	{
-
-	}
-
-	void updateEntity(Time time, int e)
-	{
+	void onEntityUpdate(int e, Time time)
+	{	
 		EntityType &type = shared->entityTypes[e];
 
 		switch (type)
 		{
+		case EntityType::NONE:
+			break;
 		case EntityType::BLOCK:
 		{
 			EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
@@ -85,13 +88,13 @@ public:
 					}
 				}
 				else
-					data.unactiveTime = 0;
+					data.unactiveTime/= 2;
 			}
 
 			if (data.fixTime >= 0)
 			{
 				data.fixTime-= time;
-				if (data.fixTime <= 0)
+				if (data.fixTime < 0)
 				{
 					shared->setBlockType((ivec3) pos, shared->logic.entityLogics[e].blockEntity.blockType);
 					shared->destroyEntity(e);
@@ -115,8 +118,9 @@ public:
 				BlockType &type = shared->blockTypes.blockAt(pos);
 				if (type == BlockType::GROUND || type == BlockType::GROUND2)
 				{
+					fvec3 otherPos = pos - data.dir.normalized() * 2;
 					int otherE = shared->createEntity(EntityType::BLOCK,
-						pos - data.dir.normalized() * 2);
+						{"pos", &otherPos});
 					EntityLogics::BlockEntity &otherData = shared->logic.entityLogics[otherE].blockEntity;
 					otherData.blockType = type;
 					shared->setBlockType(pos, BlockType::AIR);
@@ -129,14 +133,14 @@ public:
 		}
 	}
 
-	void onDropEntity(int e)
+	void onEntityDrop(int e)
 	{
 		// assert type == BLOCK
 		EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
 		data.moveToTarget = false;
 	}
 
-	void onTakeEntity(int e)
+	void onEntityTake(int e)
 	{
 		logic::EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
 		data.moveToTarget = true;
