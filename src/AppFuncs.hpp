@@ -128,7 +128,7 @@ public:
 	}
 
 	void update(float time)
-	{
+	{	
 		sf::Vector2i mouseDiff = sf::Vector2i(0, 0);
 		if (!db_pause)
 		{

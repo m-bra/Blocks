@@ -191,7 +191,7 @@ inline void Shared::resizeEntityArrays()
 }
 
 inline void Shared::update(Time time)
-{
+{	
 	fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
 	int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
 	int my = 0;

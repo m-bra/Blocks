@@ -13,6 +13,7 @@
 #include "Types.hpp"
 #include "../EntityListener.hpp"
 #include "../WorldListener.hpp"
+#include <sstream>
 
 namespace logic
 {
@@ -42,7 +43,7 @@ public:
 	}
 
 	void onEntityUpdate(int e, Time time)
-	{
+	{	
 		EntityType &type = shared->entityTypes[e];
 
 		switch (type)
