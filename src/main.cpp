@@ -31,7 +31,7 @@ void handleGlfwMouseMove(GLFWwindow *window, double x, double y)
 
 void handleGlfwScroll(GLFWwindow *window, double x, double y)
 {
-    appfuncs->scrollEvent(x);
+    appfuncs->scrollEvent(y);
 }
 
 int main()
@@ -43,7 +43,10 @@ int main()
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 
-    GLFWwindow* window = glfwCreateWindow(1024, 768, "Blocks", glfwGetPrimaryMonitor(), NULL);
+    // get the best video mode
+    int modeCount;
+    const GLFWvidmode *modes = glfwGetVideoModes(glfwGetPrimaryMonitor(), &modeCount);
+    GLFWwindow* window = glfwCreateWindow(modes[modeCount - 1].width, modes[modeCount - 1].height, "Blocks", glfwGetPrimaryMonitor(), NULL);
     if (!window)
         Log::fatalError("glfwCreateWindow failed.");
     glfwSetKeyCallback(window, handleGlfwKey);
