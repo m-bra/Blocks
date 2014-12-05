@@ -42,8 +42,8 @@ public:
 
 		btVector3 pos;
 		for (auto it = args.begin(); it != args.end(); it+= 2)
-			if (strcmp(reinterpret_cast<char const*>(it), "pos") == 0)
-				pos = reinterpret_cast<fvec3 const *>(it + 1)->bt();
+			if (strcmp(reinterpret_cast<char const*>(*it), "pos") == 0)
+				pos = reinterpret_cast<fvec3 const *>(*(it + 1))->bt();
 		po.motionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), pos));
 
 		po.body = new btRigidBody(mass, po.motionState, po.shape, inertia);

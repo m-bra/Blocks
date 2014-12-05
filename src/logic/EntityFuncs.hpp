@@ -47,6 +47,8 @@ public:
 
 		switch (type)
 		{
+		case EntityType::NONE:
+			break;
 		case EntityType::BLOCK:
 		{
 			EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
@@ -82,13 +84,13 @@ public:
 					}
 				}
 				else
-					data.unactiveTime = 0;
+					data.unactiveTime/= 2;
 			}
 
 			if (data.fixTime >= 0)
 			{
 				data.fixTime-= time;
-				if (data.fixTime <= 0)
+				if (data.fixTime < 0)
 				{
 					shared->setBlockType((ivec3) pos, shared->logic.entityLogics[e].blockEntity.blockType);
 					shared->destroyEntity(e);
