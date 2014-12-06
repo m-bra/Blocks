@@ -46,7 +46,7 @@ public:
 	}
 
 	void onEntityUpdate(int e, Time time)
-	{	
+	{
 		EntityType &type = shared->entityTypes[e];
 
 		switch (type)

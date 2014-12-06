@@ -314,6 +314,7 @@ inline void Module<Shared>::update(Time time)
 	//if (!shared->loading)
 	physicsWorld->stepSimulation(time, 5);
 }
+
 }
 }
 

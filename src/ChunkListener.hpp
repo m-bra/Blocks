@@ -14,5 +14,4 @@ public:
 };
 
 }
-
 #endif/*CHUNK_LISTENER_HPP_INCLUDED*/

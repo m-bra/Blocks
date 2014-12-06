@@ -17,5 +17,4 @@ public:
 };
 
 }
-
 #endif/*ENTITY_LISTENER_HPP_INCLUDED*/
