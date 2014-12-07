@@ -12,6 +12,8 @@
 #include <GLFW/glfw3.h>
 #include "../vec.hpp"
 
+#include "../WorldListener.hpp"
+
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 #include "BlockFuncs.hpp"
@@ -23,14 +25,17 @@ namespace graphics
 {
 
 template <typename Shared>
-class EntityFuncs
+class EntityFuncs : public WorldListener
 {
 private:
 	Shared *shared;
 	BlockFuncs<Shared> *blockFuncs;
 	GLuint blockTbo;
 public:
-	EntityFuncs(Shared *shared, BlockFuncs<Shared> *blockFuncs);
+	void setBlockFuncs(BlockFuncs<Shared> *blockFuncs) {this->blockFuncs = blockFuncs;}
+	void onWorldCreate(Shared *shared) {this->shared = shared;}
+	void onWorldDestroy() {}
+	void onWorldUpdate(Time time) {}
 
 	void onCreate(int e)
 	{
@@ -122,11 +127,6 @@ public:
 		return sizeof (cube_verts) / sizeof (float);
 	}
 };
-
-template <typename Shared>
-EntityFuncs<Shared>::EntityFuncs(Shared *a_shared, BlockFuncs<Shared> *a_blockFuncs) : shared(a_shared), blockFuncs(a_blockFuncs)
-{
-}
 
 }  // namespace graphics
 }

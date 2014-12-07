@@ -34,6 +34,11 @@ void handleGlfwScroll(GLFWwindow *window, double x, double y)
     appfuncs->scrollEvent(y);
 }
 
+void handleGlfwFrameBuf(GLFWwindow *window, int x, int y)
+{
+    appfuncs->frameBufEvent(x, y);
+}
+
 int main()
 {
     glfwSetErrorCallback(handleGlfwErr);
@@ -55,11 +60,12 @@ int main()
     glfwSetMouseButtonCallback(window, handleGlfwClick);
     glfwSetCursorPosCallback(window, handleGlfwMouseMove);
     glfwSetScrollCallback(window, handleGlfwScroll);
+    glfwSetFramebufferSizeCallback(window, handleGlfwFrameBuf);
     glfwMakeContextCurrent(window);
 
     Log::log((char const*) glGetString(GL_VERSION));
 
-    appfuncs = new AppFuncs(window, float(windowWidth) / windowHeight);
+    appfuncs = new AppFuncs(window);
 
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window) && appfuncs->running())

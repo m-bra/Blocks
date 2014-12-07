@@ -32,6 +32,9 @@ public:
 		this->shared = shared;
 	}
 
+	void onWorldDestroy() {}
+	void onWorldUpdate(Time time) {}
+
 	void onEntityCreate(int e, std::initializer_list<void const*> ls)
 	{
 		EntityType &type = shared->entityTypes[e];
@@ -146,6 +149,9 @@ public:
 		data.moveToTarget = true;
 		data.fixTime = -1;
 	}
+
+	void onEntityDestroy(int e) {}
+	void onEntityArrayResize(int newsize) {}
 };
 
 }  // namespace logic

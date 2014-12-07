@@ -62,6 +62,7 @@ public:
 
 	void onWorldCreate(Shared *shared);
 	void onWorldUpdate(Time time);
+	void onWorldDestroy() {}
 
 	void onEntityCreate(int e, std::initializer_list<void const *> args);
 	void onEntityDestroy(int e);
@@ -76,7 +77,10 @@ public:
 	void generate(ivec3 const &c);
 	void parallel(Time time);
 	void update(Time time);
+
+	bool canMove() {return true;}
 	void move(ivec3_c &m);
+	void onChunkChange(ivec3_c &c) {}
 
 	void setWalk(fvec3_c &moveSpeeds);
 	void jump();

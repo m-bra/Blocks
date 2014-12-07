@@ -46,7 +46,7 @@ struct ChunkGraphics
 
 struct EntityGraphics
 {
-	bool dirty = false, created = false;
+	bool created = false;
 	GLuint vbo, vao, tbo;
 	unsigned vertCount;
 };

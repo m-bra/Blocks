@@ -21,6 +21,10 @@ using namespace cimg_library;
 #include "../Logger.hpp"
 #include "../vec.hpp"
 
+#include "../WorldListener.hpp"
+#include "../ChunkListener.hpp"
+#include "../EntityListener.hpp"
+
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
 #include "BlockFuncs.hpp"
@@ -33,7 +37,7 @@ namespace graphics
 {
 
 template <typename Shared>
-class Module
+class Module : public WorldListener, public ChunkListener, public EntityListener
 {
 private:
 	friend class EntityFuncs<Shared>;
@@ -86,15 +90,25 @@ public:
 	ChunkFieldArray<ChunkGraphics> chunkGraphics;
 	EntityFieldArray<EntityGraphics> entityGraphics;
 
-	Module(Shared *shared, float aspect);
-	~Module();
+	void onWorldCreate(Shared *shared);
+	void onWorldDestroy();
+	void onWorldUpdate(Time time);
+
+	void onEntityCreate(int e, std::initializer_list<void const *> args);
+	void onEntityDestroy(int e);
+	void onEntityUpdate(int e, Time time) {}
+	void onEntityArrayResize(int newsize)
+	{
+		entityGraphics.resize(newsize);
+	}
+
+	void setWindowSize(int x, int y);
 	void parallel(Time time);
-	void update(Time time);
 	void render();
-	void processDirtyEntity(int e);
 	bool buildChunk(ivec3_c &);
 	bool canMove();
 	void move(ivec3_c &m);
+	void onChunkChange(ivec3_c &c);
 };
 
 template <typename Shared>
@@ -104,7 +118,7 @@ bool Module<Shared>::canMove()
 }
 
 template <typename Shared>
-void Module<Shared>::move(ivec3::cref m)
+void Module<Shared>::move(ivec3_c &m)
 {
 	auto createChunk = [&] (ivec3::cref c)
 	{
@@ -128,6 +142,12 @@ void Module<Shared>::move(ivec3::cref m)
 }
 
 template <typename Shared>
+void Module<Shared>::onChunkChange(ivec3_c &c)
+{
+	chunkGraphics.chunkAt(c).dirty = true;
+}
+
+template <typename Shared>
 inline void Module<Shared>::checkGLError(std::string msg)
 {
 	gll::onOpenGLErr([&] (GLenum err, GLubyte const *errstr)
@@ -138,12 +158,12 @@ inline void Module<Shared>::checkGLError(std::string msg)
 }
 
 template <typename Shared>
-inline Module<Shared>::Module(Shared *shared, float aspect) :
-	//context(),
-	shared(shared),
-	blockFuncs(shared),
-	entityFuncs(shared, &blockFuncs)
+inline void Module<Shared>::onWorldCreate(Shared *shared)
 {
+	this->shared = shared;
+	blockFuncs.onWorldCreate(shared);
+	entityFuncs.setBlockFuncs(&blockFuncs);
+	entityFuncs.onWorldCreate(shared);
 	vertexBufFlushed = true;
 
 	// shader
@@ -208,8 +228,6 @@ inline Module<Shared>::Module(Shared *shared, float aspect) :
 
 	delete[] pixels;
 
-	projection = glm::perspective<float>(glm::radians(60.), aspect, .1, 1000);
-
 	chunkTransforms.iterate([&] (ivec3 const &c, glm::mat4 &trans)
 	{
 		trans = glm::translate(c.glm() * glm::vec3(Shared::CSIZE_X,Shared::CSIZE_Y,Shared::CSIZE_Z));
@@ -226,7 +244,7 @@ inline Module<Shared>::Module(Shared *shared, float aspect) :
 }
 
 template <typename Shared>
-inline Module<Shared>::~Module()
+inline void Module<Shared>::onWorldDestroy()
 {
 	shared->graphics.chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &cg)
 	{
@@ -239,53 +257,52 @@ inline Module<Shared>::~Module()
 }
 
 template <typename Shared>
-inline void Module<Shared>::processDirtyEntity(int e)
+inline void Module<Shared>::setWindowSize(int x, int y)
+{
+	projection = glm::perspective<float>(glm::radians(60.), float(x) / y, .1, 1000);
+	glViewport(0, 0, x, y);
+}
+
+template <typename Shared>
+inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const *> args)
 {
 	EntityGraphics &eg = shared->graphics.entityGraphics[e];
-	EntityType &type = shared->entityTypes[e];
+	assert(!eg.created);
+	eg.created = true;
 
-	assert(eg.dirty);
-	eg.dirty = false;
+	glGenBuffers(1, &eg.vbo);
+	glGenVertexArrays(1, &eg.vao);
 
-	switch (type)
-	{
-	case EntityType::NONE:
-		if (eg.created)
-		{
-			entityFuncs.onDestroy(e);
+	glBindBuffer(GL_ARRAY_BUFFER, eg.vbo);
+	glBindVertexArray(eg.vao);
 
-			eg.created = false;
-			glDeleteBuffers(1, &eg.vbo);
-			glDeleteVertexArrays(1, &eg.vao);
-		}
-		break;
-	default:
-		if (!eg.created)
-		{
-			eg.created = true;
-			glGenBuffers(1, &eg.vbo);
-			glGenVertexArrays(1, &eg.vao);
+	GLenum const openGLType = gll::OpenGLType<VertexComponent>::type;
 
-			glBindBuffer(GL_ARRAY_BUFFER, eg.vbo);
-			glBindVertexArray(eg.vao);
+	glEnableVertexAttribArray(attributes.vertXYZ);
+	glEnableVertexAttribArray(attributes.vertUV);
+	glEnableVertexAttribArray(attributes.vertNormalXYZ);
+	glVertexAttribPointer(attributes.vertXYZ,
+	3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(0 * sizeof (VertexComponent)));
+	glVertexAttribPointer(attributes.vertUV,
+	2, openGLType, GL_FALSE, sizeof (Vertex), (void*)(3 * sizeof (VertexComponent)));
+	glVertexAttribPointer(attributes.vertNormalXYZ,
+	3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
 
-			GLenum const openGLType = gll::OpenGLType<VertexComponent>::type;
+	entityFuncs.onCreate(e);
+	eg.vertCount = entityFuncs.putVertices(eg.vbo, e);
+}
 
-			glEnableVertexAttribArray(attributes.vertXYZ);
-			glEnableVertexAttribArray(attributes.vertUV);
-			glEnableVertexAttribArray(attributes.vertNormalXYZ);
-			glVertexAttribPointer(attributes.vertXYZ,
-				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(0 * sizeof (VertexComponent)));
-			glVertexAttribPointer(attributes.vertUV,
-				2, openGLType, GL_FALSE, sizeof (Vertex), (void*)(3 * sizeof (VertexComponent)));
-			glVertexAttribPointer(attributes.vertNormalXYZ,
-				3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
+template <typename Shared>
+inline void Module<Shared>::onEntityDestroy(int e)
+{
+	EntityGraphics &eg = shared->graphics.entityGraphics[e];
+	assert(eg.created);
 
-			entityFuncs.onCreate(e);
-		}
+	entityFuncs.onDestroy(e);
 
-		eg.vertCount = entityFuncs.putVertices(eg.vbo, e);
-	}
+	eg.created = false;
+	glDeleteBuffers(1, &eg.vbo);
+	glDeleteVertexArrays(1, &eg.vao);
 }
 
 template <typename Shared>
@@ -303,7 +320,7 @@ inline void Module<Shared>::parallel(Time time)
 }
 
 template <typename Shared>
-inline void Module<Shared>::update(Time time)
+inline void Module<Shared>::onWorldUpdate(Time time)
 {
 	if (!vertexBufFlushed.load())
 		if (vertexBufLock.try_lock())
@@ -334,15 +351,6 @@ inline void Module<Shared>::update(Time time)
 			vertexBufFlushed = true;
 			vertexBufLock.unlock();
 		}
-
-
-	shared->graphics.entityGraphics.iterate([&] (int e, EntityGraphics &eg)
-	{
-		if (eg.dirty)
-			processDirtyEntity(e);
-		return true;
-	});
-
 
 	shared->camPos = shared->physics.playerBody->getWorldTransform().getOrigin();
 	shared->camPos.y+= shared->physics.playerHeight / 2 - .2;

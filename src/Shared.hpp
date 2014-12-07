@@ -85,7 +85,7 @@ public:
 	float reach = 50;
 	int playerEntity;
 
-	Shared(float aspect) : physics(this), graphics(this, aspect)
+	Shared()
 	{
 		blockTypes.fill(BlockType::NONE);
 
@@ -99,6 +99,12 @@ public:
 
 		entityListeners.push_back(&physics);
 		chunkListeners.push_back(&physics);
+		loadCallbacks.push_back(&physics);
+		worldListeners.push_back(&physics);
+
+		worldListeners.push_back(&graphics);
+		chunkListeners.push_back(&graphics);
+		entityListeners.push_back(&graphics);
 
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldCreate(this);
@@ -108,6 +114,11 @@ public:
 	{
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldDestroy();
+	}
+
+	void setWindowSize(int x, int y)
+	{
+		graphics.setWindowSize(x, y);
 	}
 
 	Time secondsToWorldTime(float seconds)
@@ -132,12 +143,6 @@ public:
 		return physics.getSelectedEntity(camPos, camPos + camDir * reach);
 	}
 
-	bool isEntityCreated(int e)
-	{
-		return physics.entityPhysics[e].created
-			&& graphics.entityGraphics[e].created;
-	}
-
 	void resetPlayer();
 
 	void resizeEntityArrays();
@@ -152,13 +157,12 @@ inline void Shared::tryMove(ivec3_c &m)
 		if (!cl->canMove())
 			canMove = false;
 
-	if (!loading && graphics.canMove() && canMove)
+	if (!loading && canMove)
 		if (moveLock.try_lock())
 		{
 			pos+= m * CSIZE;
 
 			blockTypes.shift(-m);
-			graphics.move(m);
 			for (ChunkListener *cl : chunkListeners)
 				cl->move(m);
 			moveLock.unlock();
@@ -194,8 +198,6 @@ inline void Shared::resizeEntityArrays()
 	entityTypes.resize(newSize);
 	for (EntityListener *el : entityListeners)
 		el->onEntityArrayResize(newSize);
-
-	graphics.entityGraphics.resize(newSize);
 }
 
 inline void Shared::update(Time time)
@@ -207,36 +209,25 @@ inline void Shared::update(Time time)
 	if (mx != 0 || my != 0 || mz != 0)
 		tryMove(-ivec3(mx, my, mz));
 
-	physics.update(time);
 	for (WorldListener *wl : worldListeners)
 		wl->onWorldUpdate(time);
-	graphics.update(time);
 
 	for (int e = 0; e < entityTypes.getCount(); ++e)
-		for (EntityListener *el : entityListeners)
-		{
-			el->onEntityUpdate(e, time);
-		}
+		if (entityTypes[e] != EntityType::NONE)
+			for (EntityListener *el : entityListeners)
+				el->onEntityUpdate(e, time);
 
 	if (loading)
 	{
-		bool allPhysicsClean = true;
-		physics.chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
-		{
-			if (cp.dirty)
-				allPhysicsClean = false;
-				return true;
-		});
-
 		bool allDone = true;
 		for (LoadCallback *loadcb : loadCallbacks)
 			if (!loadcb->doneLoading())
 				allDone = false;
 
-		if (allPhysicsClean && allDone)
+		if (allDone)
 		{
-				resetPlayer();
-				loading = false;
+			resetPlayer();
+			loading = false;
 		}
 	}
 }
@@ -250,38 +241,21 @@ inline void Shared::setBlockType(ivec3 const &b, BlockType type)
 	blockTypes.blockInChunk(c, b_c) = type;
 	blockWriteLock.unlock(c);
 
-	physics.chunkPhysics.chunkAt(c).dirty = true;
-	graphics.chunkGraphics.chunkAt(c).dirty = true;
-	if (b_c.x == 0 && c.x != 0)
-	{
-		physics.chunkPhysics.chunkAt(c-ivec3(1,0,0)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c-ivec3(1,0,0)).dirty = true;
+	#define CHUNK_CHANGED(C) \
+	{ \
+	for (ChunkListener *cl : chunkListeners) \
+		cl->onChunkChange(C); \
 	}
-	else if (b_c.x == CSIZE_X-1 && c.x != CCOUNT_X-1)
-	{
-		physics.chunkPhysics.chunkAt(c+ivec3(1,0,0)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c+ivec3(1,0,0)).dirty = true;
-	}
-	if (b_c.y == 0 && c.y != 0)
-	{
-		physics.chunkPhysics.chunkAt(c-ivec3(0,1,0)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c-ivec3(0,1,0)).dirty = true;
-	}
-	else if (b_c.y == CSIZE_Y-1 && c.y != CCOUNT_Y-1)
-	{
-		physics.chunkPhysics.chunkAt(c+ivec3(0,1,0)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c+ivec3(0,1,0)).dirty = true;
-	}
-	if (b_c.z == 0 && c.z != 0)
-	{
-		physics.chunkPhysics.chunkAt(c-ivec3(0,0,1)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c-ivec3(0,0,1)).dirty = true;
-	}
-	else if (b_c.z == CSIZE_Z-1 && c.z != CCOUNT_Z-1)
-	{
-		physics.chunkPhysics.chunkAt(c+ivec3(0,0,1)).dirty = true;
-		graphics.chunkGraphics.chunkAt(c+ivec3(0,0,1)).dirty = true;
-	}
+
+
+	CHUNK_CHANGED(c);
+
+	if (b_c.x == 0 && c.x != 0) 					  CHUNK_CHANGED(c - ivec3(1, 0, 0))
+	else if (b_c.x == CSIZE_X-1 && c.x != CCOUNT_X-1) CHUNK_CHANGED(c + ivec3(1, 0, 0))
+	if (b_c.y == 0 && c.y != 0)						  CHUNK_CHANGED(c - ivec3(0, 1, 0))
+	else if (b_c.y == CSIZE_Y-1 && c.y != CCOUNT_Y-1) CHUNK_CHANGED(c + ivec3(0, 1, 0))
+	if (b_c.z == 0 && c.z != 0)						  CHUNK_CHANGED(c - ivec3(0, 0, 1))
+	else if (b_c.z == CSIZE_Z-1 && c.z != CCOUNT_Z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
 }
 
 inline bool Shared::onGround()
@@ -309,7 +283,6 @@ inline int Shared::createEntity(EntityType aType, std::initializer_list<void con
 		{
 			createdEnt = e;
 			type = aType;
-			graphics.entityGraphics[e].dirty = true;
 			for (EntityListener *el : entityListeners)
 				el->onEntityCreate(e, args);
 			return false;
@@ -332,7 +305,6 @@ inline void Shared::destroyEntity(int e)
 	entityTypes[e] = EntityType::NONE;
 	for (EntityListener *el : entityListeners)
 		el->onEntityDestroy(e);
-	graphics.entityGraphics[e].dirty = true;
 }
 
 int constexpr Shared::CCOUNT_X;

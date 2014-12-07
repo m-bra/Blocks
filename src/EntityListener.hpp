@@ -10,10 +10,10 @@ namespace blocks
 class EntityListener
 {
 public:
-    virtual void onEntityCreate(int e, std::initializer_list<void const*> args) {}
-    virtual void onEntityDestroy(int e) {}
-    virtual void onEntityUpdate(int e, Time time) {}
-    virtual void onEntityArrayResize(int newsize) {}
+    virtual void onEntityCreate(int e, std::initializer_list<void const*> args) = 0;
+    virtual void onEntityDestroy(int e) = 0;
+    virtual void onEntityUpdate(int e, Time time) = 0;
+    virtual void onEntityArrayResize(int newsize) = 0;
 };
 
 }

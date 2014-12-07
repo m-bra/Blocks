@@ -45,9 +45,9 @@ private:
 		//glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_NORMAL);
 	}
 public:
-	AppFuncs(GLFWwindow *window, float aspect)
+	AppFuncs(GLFWwindow *window)
 		: window(window),
-		  shared(aspect), thread(&AppFuncs::parallel, this)
+		  shared(), thread(&AppFuncs::parallel, this)
 	{
 		updateMouseGrab();
 		int w, h;
@@ -79,6 +79,11 @@ public:
 	bool running()
 	{
 		return _running;
+	}
+
+	void frameBufEvent(int x, int y)
+	{
+		shared.setWindowSize(x, y);
 	}
 
 	void keyEvent(int key, int action, int mods)

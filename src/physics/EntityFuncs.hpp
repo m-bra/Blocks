@@ -33,6 +33,9 @@ public:
 		this->shared = shared;
 	}
 
+	void onWorldDestroy() {}
+	void onWorldUpdate(Time time) {}
+
 	void onEntityCreate(int e, std::initializer_list<void const*> args)
 	{
 		EntityPhysics &po = shared->physics.entityPhysics[e];
@@ -62,6 +65,9 @@ public:
 		po.body = 0;
 		po.motionState = 0;
 	}
+
+	void onEntityUpdate(int e, Time time) {}
+	void onEntityArrayResize(int newsize) {}
 };
 }
 }

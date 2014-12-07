@@ -15,6 +15,8 @@
 
 #include "../ChunkListener.hpp"
 #include "../EntityListener.hpp"
+#include "../LoadCallback.hpp"
+#include "../WorldListener.hpp"
 
 #include "Types.hpp"
 #include "EntityFuncs.hpp"
@@ -27,7 +29,7 @@ namespace physics
 {
 
 template <typename Shared>
-class Module : public ChunkListener, public EntityListener
+class Module : public ChunkListener, public EntityListener, public LoadCallback, public WorldListener
 {
 private:
 	template <typename T>
@@ -62,12 +64,17 @@ public:
 	fvec3 playerForce;
 	float const playerHeight = 2;
 
-	Module(Shared *shared);
-	~Module();
+	void onWorldCreate(Shared *shared);
+	void onWorldDestroy();
 
 	void onEntityCreate(int e, std::initializer_list<void const*> args);
 	void onEntityDestroy(int e);
+	void onEntityUpdate(int e, Time time) {}
 	void onEntityArrayResize(int newSize);
+
+	void onWorldUpdate(Time time);
+
+	bool doneLoading();
 
 	bool getSelectedBlock(fvec3::cref from, fvec3::cref to, ivec3 &b1, ivec3 &b2);
 	int getSelectedEntity(fvec3::cref from, fvec3::cref to);
@@ -107,11 +114,18 @@ public:
 			return true;
 		});
 	}
+
+	void onChunkChange(ivec3_c &c)
+	{
+		chunkPhysics.chunkAt(c).dirty = true;
+	}
 };
 
 template <typename Shared>
-inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(shared)
+inline void Module<Shared>::onWorldCreate(Shared *a_shared)
 {
+	shared = a_shared;
+	blockFuncs.onWorldCreate(shared);
 	entityFuncs.onWorldCreate(shared);
 
 	broadphase = new btDbvtBroadphase();
@@ -142,7 +156,7 @@ inline Module<Shared>::Module(Shared *shared) : shared(shared), blockFuncs(share
 }
 
 template <typename Shared>
-inline Module<Shared>::~Module()
+inline void Module<Shared>::onWorldDestroy()
 {
 	physicsWorld->removeRigidBody(playerBody);
 	delete playerMotionState;
@@ -257,6 +271,46 @@ inline void Module<Shared>::onEntityArrayResize(int newSize)
 }
 
 template <typename Shared>
+inline void Module<Shared>::onWorldUpdate(Time time)
+{
+	// flush shape buffer
+	if (shapeBuf && shapeBufLock.try_lock())
+	{
+		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
+
+		delete physics.shape;
+		physics.shape = shapeBuf;
+		shapeBuf = 0;
+
+		physics.body->setCollisionShape(physics.shape);
+		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
+		shapeBufChunk = ivec3(-1, -1, -1);
+		shapeBufLock.unlock();
+	}
+
+	// update player
+	playerBody->activate();
+	playerBody->setAngularFactor(btVector3(0, 1, 0));
+	playerBody->applyCentralForce(shared->physics.playerForce.bt());
+
+	//if (!shared->loading)
+	physicsWorld->stepSimulation(time, 5);
+}
+
+template <typename Shared>
+inline bool Module<Shared>::doneLoading()
+{
+	bool result = true;
+	chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
+	{
+		if (cp.dirty)
+			result = false;
+		return true;
+	});
+	return result;
+}
+
+template <typename Shared>
 inline void Module<Shared>::parallel(Time time)
 {
 	// update chunks
@@ -286,33 +340,6 @@ inline void Module<Shared>::parallel(Time time)
 		}
 		return true;
 	});
-}
-
-template <typename Shared>
-inline void Module<Shared>::update(Time time)
-{
-	// flush shape buffer
-	if (shapeBuf && shapeBufLock.try_lock())
-	{
-		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
-
-		delete physics.shape;
-		physics.shape = shapeBuf;
-		shapeBuf = 0;
-
-		physics.body->setCollisionShape(physics.shape);
-		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
-		shapeBufChunk = ivec3(-1, -1, -1);
-		shapeBufLock.unlock();
-	}
-
-	// update player
-	playerBody->activate();
-	playerBody->setAngularFactor(btVector3(0, 1, 0));
-	playerBody->applyCentralForce(shared->physics.playerForce.bt());
-
-	//if (!shared->loading)
-	physicsWorld->stepSimulation(time, 5);
 }
 
 }

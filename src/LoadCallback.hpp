@@ -7,7 +7,7 @@ namespace blocks
 class LoadCallback
 {
 public:
-    virtual bool doneLoading() {return true;}
+    virtual bool doneLoading() = 0;
 };
 
 }

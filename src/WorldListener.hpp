@@ -9,9 +9,9 @@ namespace blocks
 class WorldListener
 {
 public:
-    virtual void onWorldCreate(class Shared *shared) {}
-    virtual void onWorldDestroy() {}
-    virtual void onWorldUpdate(Time time) {}
+    virtual void onWorldCreate(class Shared *shared) = 0;
+    virtual void onWorldDestroy() = 0;
+    virtual void onWorldUpdate(Time time) = 0;
 };
 
 }

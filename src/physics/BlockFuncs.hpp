@@ -10,6 +10,7 @@
 
 #include "../vec.hpp"
 #include "../SharedTypes.hpp"
+#include "../WorldListener.hpp"
 #include "Types.hpp"
 
 namespace blocks
@@ -19,12 +20,14 @@ namespace physics
 {
 
 template <typename Shared>
-class BlockFuncs
+class BlockFuncs : public WorldListener
 {
 private:
 	Shared *shared;
 public:
-	BlockFuncs(Shared *shared) : shared(shared) {};
+	void onWorldCreate(Shared *a_shared) {shared = a_shared;}
+	void onWorldDestroy() {}
+	void onWorldUpdate(Time time) {}
 
 	void addBlockShape(ivec3::cref c, ivec3::cref b, btCompoundShape *chunkShape)
 	{

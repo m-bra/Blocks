@@ -1,10 +1,3 @@
-/*
- * BlockFuncs.hpp
- *
- *  Created on: Sep 30, 2014
- *      Author: merlin
- */
-
 #ifndef BLOCKFUNCS_HPP_
 #define BLOCKFUNCS_HPP_
 
@@ -13,6 +6,8 @@
 
 #include "../Logger.hpp"
 #include "../vec.hpp"
+
+#include "../WorldListener.hpp"
 
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
@@ -24,16 +19,18 @@ namespace graphics
 {
 
 template <typename Shared>
-class BlockFuncs
+class BlockFuncs : public WorldListener
 {
 private:
 	Shared *shared;
 public:
-	BlockFuncs(Shared *world)
-		: shared(world)
+	void onWorldCreate(Shared *a_shared)
 	{
-
+		shared = a_shared;
 	}
+
+	void onWorldDestroy() {}
+	void onWorldUpdate(Time time) {}
 
 	bool isBlockVisible(ivec3 const &b)
 	{
