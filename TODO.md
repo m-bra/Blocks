@@ -16,3 +16,5 @@
  * Kill entities fallen out of the world
  * don't let the user quit with altf4!!
  * fix randomness of generation
+ * Currently, when the distance to hold the blocks is far away, the block jumps far away when picked up.
+   Change this behaviour: when picked up, the holding distance is adjusted for the block not to jump away. (hope you get it)
