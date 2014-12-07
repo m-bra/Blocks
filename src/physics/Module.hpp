@@ -58,16 +58,16 @@ public:
 
 	EntityFieldArray<EntityPhysics> entityPhysics;
 
-	btCollisionShape *playerShape;
-	btMotionState *playerMotionState;
-	btRigidBody *playerBody;
-	fvec3 playerForce;
-	float const playerHeight = 2;
+	//btCollisionShape *playerShape;
+	//btMotionState *playerMotionState;
+	//btRigidBody *playerBody;
+	//fvec3 playerForce;
+	//float const playerHeight = 2;
 
 	void onWorldCreate(Shared *shared);
 	void onWorldDestroy();
 
-	void onEntityCreate(int e, std::initializer_list<void const*> args);
+	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
 	void onEntityUpdate(int e, Time time) {}
 	void onEntityArrayResize(int newSize);
@@ -106,7 +106,6 @@ public:
 
 		btTransform trans;
 
-		playerBody->getWorldTransform().getOrigin()-= m.bt() * Shared::CSIZE.bt();
 		entityPhysics.iterate([&] (int e, EntityPhysics &physics)
 		{
 			if (physics.created)
@@ -140,29 +139,11 @@ inline void Module<Shared>::onWorldCreate(Shared *a_shared)
 		createChunk(c);
 		return true;
 	});
-
-	playerShape = new btCapsuleShape(.2, playerHeight-.4);
-	playerMotionState =
-			new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(
-				Shared::CCOUNT_X*Shared::CSIZE_X/2,
-				Shared::CCOUNT_Y*Shared::CSIZE_Y+2,
-				Shared::CCOUNT_Z*Shared::CSIZE_Z/2)));
-	btScalar mass = 1;
-	btVector3 inertia(0, 0, 0);
-	playerShape->calculateLocalInertia(mass, inertia);
-	playerBody = new btRigidBody(mass, playerMotionState, playerShape, inertia);
-
-	physicsWorld->addRigidBody(playerBody);
 }
 
 template <typename Shared>
 inline void Module<Shared>::onWorldDestroy()
 {
-	physicsWorld->removeRigidBody(playerBody);
-	delete playerMotionState;
-	delete playerBody;
-	delete playerShape;
-
 	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
 	{
 		destroyChunk(c);
@@ -241,7 +222,7 @@ inline void Module<Shared>::destroyChunk(ivec3_c &c)
 }
 
 template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const*> args)
+inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 {
 	EntityPhysics &physics = shared->physics.entityPhysics[e];
 

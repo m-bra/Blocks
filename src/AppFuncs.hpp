@@ -111,8 +111,9 @@ public:
 			case GLFW_KEY_E:
 			{
 				fvec3 pos = shared.camPos + shared.camDir * (shared.logic.holdDistance + 1);
-				int e = shared.createEntity(EntityType::BLOCK, {"pos", &pos});
-							shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
+				int e = shared.createEntity(EntityArgs {{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t) &pos}});
+
+				shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
 			}
 				break;
 			default:;

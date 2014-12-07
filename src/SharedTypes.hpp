@@ -1,10 +1,14 @@
 #ifndef WORLDTYPES_HPP_
 #define WORLDTYPES_HPP_
 
+#include <map>
+#include <cstdint>
+
 namespace blocks
 {
 
 using Time = float;
+using EntityArgs = std::map<char const *, intptr_t>;
 
 enum class BlockType : unsigned char
 {
@@ -13,7 +17,7 @@ enum class BlockType : unsigned char
 
 enum class EntityType : unsigned char
 {
-	NONE, BLOCK, BOT
+	NONE, PLAYER, BLOCK, BOT
 };
 
 }

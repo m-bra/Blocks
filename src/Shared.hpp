@@ -6,6 +6,7 @@
 #include <mutex>
 #include <ctime>
 #include <glm/glm.hpp>
+#include <map>
 
 #include "vec.hpp"
 #include "EntityFieldArray.hpp"
@@ -17,6 +18,7 @@
 #include "physics/Module.hpp"
 
 #include "SharedTypes.hpp"
+#include <cstdint>
 
 namespace blocks
 {
@@ -47,26 +49,36 @@ public:
 	std::mutex moveLock;
 	struct
 	{
-		std::mutex _mutex[CCOUNT_X][CCOUNT_Y][CCOUNT_Z];
+		ChunkFieldArray<std::mutex> _mutex;
 
 		void lock(ivec3_c &c)
 		{
-			_mutex[c.x][c.y][c.z].lock();
+			_mutex.chunkAt(c).lock();
 		}
 
 		bool try_lock(ivec3_c &c)
 		{
-			return _mutex[c.x][c.y][c.z].try_lock();
+			return _mutex.chunkAt(c).try_lock();
 		}
 
 		void unlock(ivec3_c &c)
 		{
-			_mutex[c.x][c.y][c.z].unlock();
+			_mutex.chunkAt(c).unlock();
 		}
 	} blockWriteLock;
 	ivec3 pos, nextMove;
 
 	EntityFieldArray<EntityType> entityTypes;
+	EntityFieldArray<fvec3> entityEyePos;
+	struct
+	{
+		physics::Module<Shared> *physics;
+		fvec3 operator [](int e)
+		{
+			return physics->entityPhysics[e].body->getWorldTransform().getOrigin();
+		}
+	} entityPos;
+
 	BlockFieldArray<BlockType> blockTypes;
 
 	physics::Module<Shared> physics;
@@ -80,13 +92,16 @@ public:
 
 	Time gameTime;
 	bool loading = true;
-
-	fvec3 camPos, camDir, camLeft, camUp;
-	float reach = 50;
 	int playerEntity;
+
+	//fvec3 camPos;
+	fvec3 camDir, camLeft, camUp;
+	//float reach = 50;
 
 	Shared()
 	{
+		entityPos.physics = physics;
+
 		blockTypes.fill(BlockType::NONE);
 
 		pos.z = time(0) % 1000;
@@ -130,10 +145,10 @@ public:
 
 	bool onGround();
 
-	int createEntity(EntityType aType, std::initializer_list<void const*> args);
+	int createEntity(EntityArgs args);
 	void destroyEntity(int e);
 
-	bool getSelectedBlock(ivec3 &b1, ivec3 &b2)
+	bool getSelectedBlock(int e, ivec3 &b1, ivec3 &b2)
 	{
 		return physics.getSelectedBlock(camPos, camPos + camDir * reach, b1, b2);
 	}
@@ -274,15 +289,21 @@ inline bool Shared::onGround()
 }
 
 
-inline int Shared::createEntity(EntityType aType, std::initializer_list<void const *> args)
+inline int Shared::createEntity(EntityArgs args)
 {
+	assert(args.find("type") != args.end());
+	fvec3 defaultEyePos(0, 0, 0);
+	if (args.find("eyePos") == args.end())
+		args["eyePos"] = (intptr_t) &defaultEyePos;
+
 	int createdEnt = -1;
 	auto tryCreate = [&] (int e, EntityType &type)
 	{
 		if (type == EntityType::NONE)
 		{
 			createdEnt = e;
-			type = aType;
+			type = static_cast<EntityType>(args["type"]);
+			entityEyePos[e] = *(fvec3 *) args["eyePos"];
 			for (EntityListener *el : entityListeners)
 				el->onEntityCreate(e, args);
 			return false;

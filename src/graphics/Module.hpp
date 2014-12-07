@@ -21,6 +21,9 @@ using namespace cimg_library;
 #include "../Logger.hpp"
 #include "../vec.hpp"
 
+#include "../ChunkFieldArray.hpp"
+#include "../BlockFieldArray.hpp"
+
 #include "../WorldListener.hpp"
 #include "../ChunkListener.hpp"
 #include "../EntityListener.hpp"
@@ -94,7 +97,7 @@ public:
 	void onWorldDestroy();
 	void onWorldUpdate(Time time);
 
-	void onEntityCreate(int e, std::initializer_list<void const *> args);
+	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
 	void onEntityUpdate(int e, Time time) {}
 	void onEntityArrayResize(int newsize)
@@ -264,7 +267,7 @@ inline void Module<Shared>::setWindowSize(int x, int y)
 }
 
 template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const *> args)
+inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 {
 	EntityGraphics &eg = shared->graphics.entityGraphics[e];
 	assert(!eg.created);
@@ -288,7 +291,7 @@ inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void con
 	glVertexAttribPointer(attributes.vertNormalXYZ,
 	3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
 
-	entityFuncs.onCreate(e);
+	entityFuncs.onEntityCreate(e, args);
 	eg.vertCount = entityFuncs.putVertices(eg.vbo, e);
 }
 
@@ -298,7 +301,7 @@ inline void Module<Shared>::onEntityDestroy(int e)
 	EntityGraphics &eg = shared->graphics.entityGraphics[e];
 	assert(eg.created);
 
-	entityFuncs.onDestroy(e);
+	entityFuncs.onEntityDestroy(e);
 
 	eg.created = false;
 	glDeleteBuffers(1, &eg.vbo);

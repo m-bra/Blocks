@@ -35,7 +35,7 @@ public:
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void onEntityCreate(int e, std::initializer_list<void const*> ls)
+	void onEntityCreate(int e, EntityArgs ls)
 	{
 		EntityType &type = shared->entityTypes[e];
 		EntityLogics &logics = shared->logic.entityLogics[e];
@@ -122,8 +122,8 @@ public:
 				if (type == BlockType::GROUND || type == BlockType::GROUND2)
 				{
 					fvec3 otherPos = pos - data.dir.normalized() * 2;
-					int otherE = shared->createEntity(EntityType::BLOCK,
-						{"pos", &otherPos});
+					int otherE = shared->createEntity({{"type", (intptr_t) EntityType::BLOCK},
+						{"pos", (intptr_t) &otherPos}});
 					EntityLogics::BlockEntity &otherData = shared->logic.entityLogics[otherE].blockEntity;
 					otherData.blockType = type;
 					shared->setBlockType(pos, BlockType::AIR);

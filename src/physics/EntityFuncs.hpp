@@ -14,6 +14,7 @@
 #include "../EntityListener.hpp"
 #include "../WorldListener.hpp"
 #include <cstring>
+#include "../Logger.hpp"
 
 namespace blocks
 {
@@ -36,30 +37,46 @@ public:
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void onEntityCreate(int e, std::initializer_list<void const*> args)
+	void onEntityCreate(int e, EntityArgs args)
 	{
+		assert(args.find("type") != args.end());
+
 		EntityPhysics &po = shared->physics.entityPhysics[e];
+		EntityType type = (EntityType) args["type"];
 
-		po.shape = &blockShape;
-
-		float mass = .1;
+		float mass = 1;
 		btVector3 inertia;
-		po.shape->calculateLocalInertia(mass, inertia);
 
-		btVector3 pos;
-		for (auto it = args.begin(); it != args.end(); it+= 2)
-			if (strcmp(reinterpret_cast<char const*>(*it), "pos") == 0)
-				pos = reinterpret_cast<fvec3 const *>(*(it + 1))->bt();
+		switch (type)
+		{
+		case EntityType::BLOCK:
+			po.shape = &blockShape;
+			mass = .1;
+			break;
+		case EntityType::PLAYER:
+			mass = 50;
+			po.shape = new btCapsuleShape(.2, shared->physics.playerHeight - .4);
+			break;
+		default:
+			Log::error("Physics: Trying to create not supported entity");
+		}
+
+
+		btVector3 pos = reinterpret_cast<fvec3_c *>(args["pos"])->bt();
 		po.motionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), pos));
 
+		po.shape->calculateLocalInertia(mass, inertia);
 		po.body = new btRigidBody(mass, po.motionState, po.shape, inertia);
 	}
 
 	void onEntityDestroy(int e)
 	{
 		EntityPhysics &po = shared->physics.entityPhysics[e];
+
 		delete po.motionState;
 		delete po.body;
+		if (po.shape != &blockShape)
+			delete po.shape;
 
 		po.shape = 0;
 		po.body = 0;

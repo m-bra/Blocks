@@ -8,6 +8,7 @@
 #ifndef LTYPES_HPP_
 #define LTYPES_HPP_
 
+#include <cstring>
 #include "../vec.hpp"
 #include "../SharedTypes.hpp"
 
@@ -35,10 +36,16 @@ struct EntityLogics
 		float nextChange;
 	};
 
+	struct Player
+	{
+		int heldEntity;
+	};
+
 	union
 	{
 	BlockEntity blockEntity;
 	Bot bot;
+	Player player;
 	};
 
 	EntityLogics()

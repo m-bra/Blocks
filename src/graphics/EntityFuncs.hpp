@@ -12,6 +12,7 @@
 #include <GLFW/glfw3.h>
 #include "../vec.hpp"
 
+#include "../EntityListener.hpp"
 #include "../WorldListener.hpp"
 
 #include "../SharedTypes.hpp"
@@ -25,7 +26,7 @@ namespace graphics
 {
 
 template <typename Shared>
-class EntityFuncs : public WorldListener
+class EntityFuncs : public WorldListener, public EntityListener
 {
 private:
 	Shared *shared;
@@ -37,15 +38,14 @@ public:
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void onCreate(int e)
+	void onEntityCreate(int e, EntityArgs args)
 	{
 		shared->graphics.entityGraphics[e].tbo = shared->graphics.chunkTbo;
 	}
 
-	void onDestroy(int e)
-	{
-
-	}
+	void onEntityDestroy(int e) {}
+	void onEntityArrayResize(int newsize) {}
+	void onEntityUpdate(int e, Time time) {}
 
 	int putVertices(GLuint vbo, int e)
 	{

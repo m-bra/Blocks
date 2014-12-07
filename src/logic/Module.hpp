@@ -57,14 +57,14 @@ public:
 	EntityFieldArray<EntityLogics> entityLogics;
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
-	int heldEntity = -1;
-	float holdDistance = 3;
+	//int heldEntity = -1;
+	//float holdDistance = 3;
 
 	void onWorldCreate(Shared *shared);
 	void onWorldUpdate(Time time);
 	void onWorldDestroy() {}
 
-	void onEntityCreate(int e, std::initializer_list<void const *> args);
+	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
 	void onEntityUpdate(int e, Time time);
 	void onEntityArrayResize(int newSize)
@@ -166,7 +166,7 @@ inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 }
 
 template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e, std::initializer_list<void const*> args)
+inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
@@ -297,7 +297,7 @@ inline void Module<Shared>::take()
 				std::cerr << "Did select entity AND block simultaneously!\n";
 
 			fvec3 pos = b1 + fvec3(.5, .5, .5);
-			heldEntity = shared->createEntity(EntityType::BLOCK, {"pos", &pos});
+			heldEntity = shared->createEntity({{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t)&pos}});
 
 			shared->logic.entityLogics[heldEntity].blockEntity.blockType
 				= shared->blockTypes.blockAt(b1);
