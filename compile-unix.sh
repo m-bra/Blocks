@@ -5,9 +5,9 @@ mkdir -p build
 cd build
 
 echo "--- Compiling GLEW ---"
-mkdir -p glew; cd glew
-cmake ../../src/external/glew -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=.
-make -j && make install
+cp -r ../src/external/glew glew
+cd glew
+make -j
 cd ..
 
 echo "--- Compiling Bullet ---"
