@@ -36,6 +36,7 @@ void handleGlfwScroll(GLFWwindow *window, double x, double y)
 
 void handleGlfwFrameBuf(GLFWwindow *window, int x, int y)
 {
+    Log::debug("handleGlfwFrameBuf() called.");
     appfuncs->frameBufEvent(x, y);
 }
 
@@ -48,12 +49,24 @@ int main()
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 
-    // get the best video mode
-    int modeCount;
-    const GLFWvidmode *modes = glfwGetVideoModes(glfwGetPrimaryMonitor(), &modeCount);
-    int windowWidth = modes[modeCount - 1].width;
-    int windowHeight = modes[modeCount - 1].height;
-    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", glfwGetPrimaryMonitor(), NULL);
+    bool const fullscreen = false;
+
+    int windowWidth, windowHeight;
+
+    if (fullscreen)
+    {
+        // get the best video mode
+        int modeCount;
+        GLFWvidmode const *modes = glfwGetVideoModes(glfwGetPrimaryMonitor(), &modeCount);
+        windowWidth = modes[modeCount - 1].width;
+        windowHeight = modes[modeCount - 1].height;
+    }
+    else
+    {
+        windowWidth = 800;
+        windowHeight = 600;
+    }
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", fullscreen ? glfwGetPrimaryMonitor() : 0, 0);
     if (!window)
         Log::fatalError("glfwCreateWindow failed.");
     glfwSetKeyCallback(window, handleGlfwKey);
@@ -66,6 +79,7 @@ int main()
     Log::log((char const*) glGetString(GL_VERSION));
 
     appfuncs = new AppFuncs(window);
+    appfuncs->frameBufEvent(windowWidth, windowHeight);
 
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window) && appfuncs->running())

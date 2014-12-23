@@ -55,7 +55,7 @@ public:
 			break;
 		case EntityType::PLAYER:
 			mass = 50;
-			po.shape = new btCapsuleShape(.2, shared->physics.playerHeight - .4);
+			po.shape = new btCapsuleShape(.2, shared->playerHeight - .4);
 			break;
 		default:
 			Log::error("Physics: Trying to create not supported entity");
@@ -83,7 +83,24 @@ public:
 		po.motionState = 0;
 	}
 
-	void onEntityUpdate(int e, Time time) {}
+	void onEntityUpdate(int e, Time time)
+	{
+		EntityType type = shared->entityTypes[e];
+		EntityPhysics physics = shared->physics.entityPhysics[e];
+
+		physics.body->applyCentralForce(physics.force.bt());
+
+		switch (type)
+		{
+		case EntityType::PLAYER:
+			physics.body->activate();
+			physics.body->setAngularFactor(btVector3(0, 1, 0));
+			break;
+		default:
+			break;
+		}
+	}
+
 	void onEntityArrayResize(int newsize) {}
 };
 }

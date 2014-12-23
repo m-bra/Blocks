@@ -41,8 +41,8 @@ private:
 
 	void updateMouseGrab()
 	{
-		glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-		//glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_NORMAL);
+		//glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(window, GLFW_CURSOR, mouseDetached ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_NORMAL);
 	}
 public:
 	AppFuncs(GLFWwindow *window)
@@ -110,7 +110,8 @@ public:
 				break;
 			case GLFW_KEY_E:
 			{
-				fvec3 pos = shared.camPos + shared.camDir * (shared.logic.holdDistance + 1);
+				float const holdDistance = shared.logic.entityLogics[shared.playerEntity].player.holdDistance;
+				fvec3 pos = fvec3(shared.entityPos[shared.playerEntity]) + shared.camDir * (holdDistance + 1);
 				int e = shared.createEntity(EntityArgs {{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t) &pos}});
 
 				shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
@@ -166,7 +167,7 @@ public:
 
 	void scrollEvent(double ticks)
 	{
-		float &holdDis = shared.logic.holdDistance;
+		float &holdDis = shared.logic.entityLogics[shared.playerEntity].player.holdDistance;
 		holdDis+= ticks * .5;
 		holdDis = glm::clamp(holdDis, 2.f, shared.reach-1.f);
 	}

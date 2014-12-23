@@ -3,6 +3,7 @@
 
 #include <map>
 #include <cstdint>
+#include "vec.hpp"
 
 namespace blocks
 {

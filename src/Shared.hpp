@@ -68,16 +68,33 @@ public:
 	} blockWriteLock;
 	ivec3 pos, nextMove;
 
+	// A nice lil class which enables setting the operator [] function.
+	// e.g. Indexer indexer(MY_FUNCTION_HERE);
+	// when calling indexer[1] -> same as MY_FUNCTION_HERE(1)
+	template <typename T>
+	struct Indexer
+	{
+		using Function = std::function<T&(int)>;
+		Function const _function;
+
+		Indexer(Function const &function) : _function(function) {}
+
+		T &operator [](int e)
+		{
+			return _function(e);
+		}
+	};
+
 	EntityFieldArray<EntityType> entityTypes;
 	EntityFieldArray<fvec3> entityEyePos;
-	struct
+	// brace init needed bc of most vexing parse -.-
+	Indexer<btVector3> entityPos = Indexer<btVector3>(
+	[&] (int e) -> btVector3 &
 	{
-		physics::Module<Shared> *physics;
-		fvec3 operator [](int e)
-		{
-			return physics->entityPhysics[e].body->getWorldTransform().getOrigin();
-		}
-	} entityPos;
+		assert(e >= 0 && e < physics.entityPhysics.getCount());
+		assert(physics.entityPhysics[e].created);
+		return physics.entityPhysics[e].body->getWorldTransform().getOrigin();
+	} );
 
 	BlockFieldArray<BlockType> blockTypes;
 
@@ -96,12 +113,13 @@ public:
 
 	//fvec3 camPos;
 	fvec3 camDir, camLeft, camUp;
-	//float reach = 50;
+
+	// configuration
+	float const reach = 50;
+	float const playerHeight = 2;
 
 	Shared()
 	{
-		entityPos.physics = physics;
-
 		blockTypes.fill(BlockType::NONE);
 
 		pos.z = time(0) % 1000;
@@ -123,10 +141,15 @@ public:
 
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldCreate(this);
+
+		fvec3 playerPos = CCOUNT * CSIZE / 2;
+		playerPos.y = CCOUNT_Y * CSIZE_Y;
+		playerEntity = createEntity({{"type", (intptr_t) EntityType::PLAYER}, {"pos", (intptr_t) &playerPos}});
 	}
 
 	~Shared()
 	{
+		destroyEntity(playerEntity);
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldDestroy();
 	}
@@ -148,14 +171,14 @@ public:
 	int createEntity(EntityArgs args);
 	void destroyEntity(int e);
 
-	bool getSelectedBlock(int e, ivec3 &b1, ivec3 &b2)
+	bool getSelectedBlock(ivec3 &b1, ivec3 &b2)
 	{
-		return physics.getSelectedBlock(camPos, camPos + camDir * reach, b1, b2);
+		return physics.getSelectedBlock(entityPos[playerEntity], fvec3(entityPos[playerEntity]) + camDir * reach, b1, b2);
 	}
 
 	int getSelectedEntity()
 	{
-		return physics.getSelectedEntity(camPos, camPos + camDir * reach);
+		return physics.getSelectedEntity(entityPos[playerEntity], fvec3(entityPos[playerEntity]) + camDir * reach);
 	}
 
 	void resetPlayer();
@@ -186,7 +209,7 @@ inline void Shared::tryMove(ivec3_c &m)
 
 inline void Shared::resetPlayer()
 {
-	btVector3 &playerPos = physics.playerBody->getWorldTransform().getOrigin();
+	btVector3 &playerPos = entityPos[playerEntity];
 	int bx = CCOUNT_X*CSIZE_X / 2;
 	int bz = CCOUNT_Z*CSIZE_Z / 2;
 	for (int i = 0; i < 50; ++i)
@@ -196,7 +219,7 @@ inline void Shared::resetPlayer()
 					&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
 					&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
 					{
-						playerPos = btVector3(bx+.5, by+physics.playerHeight/2, bz+.5);
+						playerPos = btVector3(bx+.5, by+playerHeight/2, bz+.5);
 						return;
 					}
 					bx = rand() % CCOUNT_X*CSIZE_X;
@@ -211,13 +234,14 @@ inline void Shared::resizeEntityArrays()
 	int const newSize = 10 + size * 2;
 
 	entityTypes.resize(newSize);
+	entityEyePos.resize(newSize);
 	for (EntityListener *el : entityListeners)
 		el->onEntityArrayResize(newSize);
 }
 
 inline void Shared::update(Time time)
 {
-	fvec3 ppos = physics.playerBody->getWorldTransform().getOrigin();
+	fvec3 ppos = entityPos[playerEntity];
 	int mx = CCOUNT_X/2 - ppos.x / CSIZE_X;
 	int my = 0;
 	int mz = CCOUNT_Z/2 - ppos.z / CSIZE_Z;
@@ -275,7 +299,7 @@ inline void Shared::setBlockType(ivec3 const &b, BlockType type)
 
 inline bool Shared::onGround()
 {
-	ivec3 feet = physics.playerBody->getWorldTransform().getOrigin();
+	ivec3 feet = entityPos[playerEntity];
 	ivec3 check[2] = {feet, feet + ivec3(0, -1, 0)};
 
 	for (int i = 0; i < 2; ++i)
@@ -292,9 +316,8 @@ inline bool Shared::onGround()
 inline int Shared::createEntity(EntityArgs args)
 {
 	assert(args.find("type") != args.end());
-	fvec3 defaultEyePos(0, 0, 0);
-	if (args.find("eyePos") == args.end())
-		args["eyePos"] = (intptr_t) &defaultEyePos;
+	// we do NOT want this since this is removed!
+	assert(args.find("eyePos") == args.end());
 
 	int createdEnt = -1;
 	auto tryCreate = [&] (int e, EntityType &type)
@@ -303,7 +326,6 @@ inline int Shared::createEntity(EntityArgs args)
 		{
 			createdEnt = e;
 			type = static_cast<EntityType>(args["type"]);
-			entityEyePos[e] = *(fvec3 *) args["eyePos"];
 			for (EntityListener *el : entityListeners)
 				el->onEntityCreate(e, args);
 			return false;
@@ -316,7 +338,7 @@ inline int Shared::createEntity(EntityArgs args)
 		resizeEntityArrays();
 		entityTypes.iterate(tryCreate);
 		if (createdEnt == -1)
-			std::cerr << "Couldn't create entity for unknown reason... (maybe out of memory / corruption)\n";
+			Log::fatalError("Couldn't create entity for unknown reason... (maybe corruption / out of memory)\n");
 	}
 	return createdEnt;
 }

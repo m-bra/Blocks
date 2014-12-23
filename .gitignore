@@ -1,6 +1,6 @@
+*~
 .atom-build.json
 .linter-clang-includes
-*.*\~
 build
 blocks
 build

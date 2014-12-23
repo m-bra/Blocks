@@ -44,6 +44,9 @@ public:
 		case EntityType::BLOCK:
 			logics.blockEntity.fixTime = -1;
 			break;
+		case EntityType::PLAYER:
+			logics.player.holdDistance = 3;
+			break;
 		default:;
 		}
 	}
@@ -63,8 +66,8 @@ public:
 			btRigidBody *body = shared->physics.entityPhysics[e].body;
 			btVector3 const pos = body->getWorldTransform().getOrigin();
 
-			if (shared->logic.heldEntity == e)
-				data.target = shared->camPos + shared->camDir * shared->logic.holdDistance;
+			if (shared->logic.entityLogics[shared->playerEntity].player.heldEntity == e)
+				data.target = shared->entityPos[shared->playerEntity] + shared->camDir * shared->logic.entityLogics[shared->playerEntity].player.holdDistance;
 
 			if (data.moveToTarget)
 			{

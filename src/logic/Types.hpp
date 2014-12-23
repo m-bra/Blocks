@@ -39,6 +39,7 @@ struct EntityLogics
 	struct Player
 	{
 		int heldEntity;
+		float holdDistance;
 	};
 
 	union

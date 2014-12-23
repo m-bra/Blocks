@@ -58,7 +58,6 @@ public:
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
 	//int heldEntity = -1;
-	//float holdDistance = 3;
 
 	void onWorldCreate(Shared *shared);
 	void onWorldUpdate(Time time);
@@ -160,7 +159,7 @@ template <typename Shared>
 inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 {
 	glm::vec3 removeY(1, 0, 1);
-	shared->physics.playerForce =
+	shared->physics.entityPhysics[shared->playerEntity].force =
 		(shared->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
 		+(shared->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15;
 }
@@ -237,7 +236,7 @@ inline void Module<Shared>::move(ivec3_c &m)
 template <typename Shared>
 inline void Module<Shared>::resetPlayer()
 {
-	btVector3 &playerPos = shared->physics.playerBody->getWorldTransform().getOrigin();
+	btVector3 &playerPos = shared->entityPos[shared->playerEntity];
 	int bx = Shared::CCOUNT_X*Shared::CSIZE_X / 2;
 	int bz = Shared::CCOUNT_Z*Shared::CSIZE_Z / 2;
 	for (int i = 0; i < 50; ++i)
@@ -247,7 +246,7 @@ inline void Module<Shared>::resetPlayer()
 			 && shared->blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
 			 && shared->blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
 			{
-				playerPos = btVector3(bx+.5, by+shared->physics.playerHeight/2, bz+.5);
+				playerPos = btVector3(bx+.5, by+shared->playerHeight/2, bz+.5);
 				return;
 			}
 		bx = rand() % Shared::CCOUNT_X*Shared::CSIZE_X;
@@ -261,7 +260,7 @@ inline void Module<Shared>::jump()
 {
 	// sometimes doesnt jump although on ground
 	//if (shared->onGround())
-		shared->physics.playerBody->applyCentralImpulse(btVector3(0, 7, 0));
+		shared->physics.entityPhysics[shared->playerEntity].body->applyCentralImpulse(btVector3(0, 7, 0));
 }
 
 template <typename Shared>
@@ -281,7 +280,7 @@ inline void Module<Shared>::take()
 	int const selectedEntity = shared->getSelectedEntity();
 
 	// push away held entity
-	int &heldEntity = shared->logic.heldEntity;
+	int &heldEntity = shared->logic.entityLogics[shared->playerEntity].player.heldEntity;
 	if (heldEntity != -1)
 	{
 		btRigidBody *body = shared->physics.entityPhysics[heldEntity].body;
@@ -318,7 +317,7 @@ inline void Module<Shared>::take()
 template <typename Shared>
 inline void Module<Shared>::supertake()
 {
-	int &heldEntity = shared->logic.heldEntity;
+	int &heldEntity = shared->logic.entityLogics[shared->playerEntity].player.heldEntity;
 	if (heldEntity != -1)
 	{
 		btRigidBody *body = shared->physics.entityPhysics[heldEntity].body;
@@ -332,7 +331,7 @@ inline void Module<Shared>::supertake()
 template <typename Shared>
 inline void Module<Shared>::place()
 {
-	int &heldEnt = shared->logic.heldEntity;
+	int &heldEnt = shared->logic.entityLogics[shared->playerEntity].player.heldEntity;
 	if (heldEnt != -1 && shared->entityTypes[heldEnt] == EntityType::BLOCK)
 	{
 		EntityLogics::BlockEntity &data = shared->logic.entityLogics[heldEnt].blockEntity;

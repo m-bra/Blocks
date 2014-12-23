@@ -77,6 +77,7 @@ struct vec3
 #if BULLET_CONVERSION
 	vec3(btVector3 const &v) : x(v.x()), y(v.y()), z(v.z()) {}
 	btVector3 bt() const {return btVector3(x, y, z);}
+	operator btVector3() const {return bt();}
 #endif
 
 #if GLM_CONVERSION
@@ -86,6 +87,7 @@ struct vec3
 	vec3(glm::ivec3 const &v) : x(v.x), y(v.y), z(v.z) {};
 	vec3(glm::bvec3 const &v) : x(v.x), y(v.y), z(v.z) {};
 	glm::vec3 glm() const {return glm::vec3(x, y, z);}
+	operator glm::vec3() const {return glm();}
 #endif
 
 	T &operator [](int i)

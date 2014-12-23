@@ -262,6 +262,7 @@ inline void Module<Shared>::onWorldDestroy()
 template <typename Shared>
 inline void Module<Shared>::setWindowSize(int x, int y)
 {
+	Log::debug("graphics/Module::setWindowSize() called.");
 	projection = glm::perspective<float>(glm::radians(60.), float(x) / y, .1, 1000);
 	glViewport(0, 0, x, y);
 }
@@ -354,9 +355,6 @@ inline void Module<Shared>::onWorldUpdate(Time time)
 			vertexBufFlushed = true;
 			vertexBufLock.unlock();
 		}
-
-	shared->camPos = shared->physics.playerBody->getWorldTransform().getOrigin();
-	shared->camPos.y+= shared->physics.playerHeight / 2 - .2;
 }
 
 template <typename Shared>
@@ -364,21 +362,22 @@ inline void Module<Shared>::render()
 {
 	if (shared->loading)
 	{
-		glClearColor(1, 0, 0, 1);
+		glClearColor(.1, .1, .2, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		return;
 	}
 
 	program.bind();
 
-	glUniform3f(uniforms.eyePosXYZ, shared->camPos.x, shared->camPos.y, shared->camPos.z);
-	glUniform3f(uniforms.lightXYZ,  shared->camPos.x, shared->camPos.y + 200, shared->camPos.z);
+	fvec3 eyePos = shared->entityPos[shared->playerEntity] + shared->entity;
+	glUniform3f(uniforms.eyePosXYZ, eyePos.x, eyePos.y, eyePos.z);
+	glUniform3f(uniforms.lightXYZ,  eyePos.x, eyePos.y + 200, eyePos.z);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, chunkTbo);
 
-	projview = projection * glm::lookAt(shared->camPos.glm(),
-		shared->camPos.glm() + shared->camDir.glm(), shared->camUp.glm());
+	projview = projection * glm::lookAt(playerPos.glm(),
+		playerPos.glm() + shared->camDir.glm(), shared->camUp.glm());
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

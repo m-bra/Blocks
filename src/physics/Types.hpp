@@ -1,10 +1,3 @@
-/*
- * Types.hpp
- *
- *  Created on: Oct 17, 2014
- *      Author: merlin
- */
-
 #ifndef TYPES_HPP_
 #define TYPES_HPP_
 
@@ -20,6 +13,7 @@ struct EntityPhysics
 	btCollisionShape *shape = 0;
 	btMotionState *motionState = 0;
 	btRigidBody *body = 0;
+	fvec3 force;
 };
 
 struct ChunkPhysics

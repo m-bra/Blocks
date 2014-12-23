@@ -62,7 +62,6 @@ public:
 	//btMotionState *playerMotionState;
 	//btRigidBody *playerBody;
 	//fvec3 playerForce;
-	//float const playerHeight = 2;
 
 	void onWorldCreate(Shared *shared);
 	void onWorldDestroy();
@@ -268,11 +267,6 @@ inline void Module<Shared>::onWorldUpdate(Time time)
 		shapeBufChunk = ivec3(-1, -1, -1);
 		shapeBufLock.unlock();
 	}
-
-	// update player
-	playerBody->activate();
-	playerBody->setAngularFactor(btVector3(0, 1, 0));
-	playerBody->applyCentralForce(shared->physics.playerForce.bt());
 
 	//if (!shared->loading)
 	physicsWorld->stepSimulation(time, 5);
