@@ -13,12 +13,13 @@
 #include "ChunkFieldArray.hpp"
 #include "BlockFieldArray.hpp"
 
-#include "logic/Module.hpp"
 #include "graphics/Module.hpp"
 #include "physics/Module.hpp"
 
 #include "SharedTypes.hpp"
 #include <cstdint>
+
+#include "Registerable.hpp"
 
 namespace blocks
 {
@@ -99,7 +100,6 @@ public:
 	BlockFieldArray<BlockType> blockTypes;
 
 	physics::Module<Shared> physics;
-	logic::Module<Shared> logic;
 	graphics::Module<Shared> graphics;
 
 	std::vector<WorldListener *> worldListeners;
@@ -118,17 +118,24 @@ public:
 	float const reach = 50;
 	float const playerHeight = 2;
 
-	Shared()
+	Shared(Registerable **registerables, int registerables_count)
 	{
 		blockTypes.fill(BlockType::NONE);
 
 		pos.z = time(0) % 1000;
 		pos.x = (time(0) % 1000000) / 1000;
 
-		entityListeners.push_back(&logic);
-		worldListeners.push_back(&logic);
-		loadCallbacks.push_back(&logic);
-		chunkListeners.push_back(&logic);
+		for (int i = 0; i < registerables_count; ++i)
+		{
+			if (registerable[i]->getEntityListener())
+				entityListeners.push_back(registerable[i]->getEntityListener());
+			if (registerable[i]->getWorldListener())
+				entityListeners.push_back(registerable[i]->getWorldListener());
+			if (registerable[i]->getChunkListener())
+				entityListeners.push_back(registerable[i]->getChunkListener());
+			if (registerable[i]->getLoadCallback())
+				entityListeners.push_back(registerable[i]->getLoadCallback());
+		}
 
 		entityListeners.push_back(&physics);
 		chunkListeners.push_back(&physics);

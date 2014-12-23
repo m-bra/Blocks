@@ -1,12 +1,5 @@
-/*
- * Logic.hpp
- *
- *  Created on: Aug 30, 2014
- *      Author: merlin
- */
-
-#ifndef LOGIC_HPP_
-#define LOGIC_HPP_
+#ifndef LOGIC_HPP_INCLUDED
+#define LOGIC_HPP_INCLUDED
 
 #include <fstream>
 #include <ctime>
@@ -26,13 +19,11 @@
 #include "../EntityFieldArray.hpp"
 #include "../vec.hpp"
 
+#include "../Shared.hpp"
 #include "../SharedTypes.hpp"
-#include "../EntityListener.hpp"
-#include "../WorldListener.hpp"
-#include "../LoadCallback.hpp"
-#include "../ChunkListener.hpp"
-#include "Types.hpp"
+#include "../Registerable.hpp"
 
+#include "Types.hpp"
 #include "EntityFuncs.hpp"
 
 namespace blocks
@@ -41,14 +32,13 @@ namespace blocks
 namespace logic
 {
 
-template <typename Shared>
-class Module : public EntityListener, public WorldListener, public LoadCallback, public ChunkListener
+class Module : public Registerable, public EntityListener, public WorldListener, public LoadCallback, public ChunkListener
 {
 private:
 	template <typename T>
-	using ChunkFieldArray = ChunkFieldArray<typename Shared::ChunkFieldArraySize, T>;
+	using ChunkFieldArray = ChunkFieldArray<Shared::ChunkFieldArraySize, T>;
 	template <typename T>
-	using BlockFieldArray = BlockFieldArray<typename Shared::BlockFieldArraySize, T>;
+	using BlockFieldArray = BlockFieldArray<Shared::BlockFieldArraySize, T>;
 
 	Shared *shared;
 	int seed;
@@ -57,11 +47,10 @@ public:
 	EntityFieldArray<EntityLogics> entityLogics;
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
-	//int heldEntity = -1;
-
 	void onWorldCreate(Shared *shared);
 	void onWorldUpdate(Time time);
 	void onWorldDestroy() {}
+	WorldListener *getWorldListener() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
@@ -70,8 +59,10 @@ public:
 	{
 		entityLogics.resize(newSize);
 	}
+	EntityListener *getEntityListener() {return this;}
 
 	bool doneLoading();
+	LoadCallback *getLoadCallback() {return this;}
 
 	void generate(ivec3 const &c);
 	void parallel(Time time);
@@ -80,6 +71,7 @@ public:
 	bool canMove() {return true;}
 	void move(ivec3_c &m);
 	void onChunkChange(ivec3_c &c) {}
+	ChunkListener *getChunkListener() {return this;}
 
 	void setWalk(fvec3_c &moveSpeeds);
 	void jump();
@@ -91,8 +83,8 @@ public:
 	void supertake();
 };
 
-template <typename Shared>
-inline void Module<Shared>::onWorldCreate(Shared *a_shared)
+
+inline void Module::onWorldCreate(Shared *a_shared)
 {
 	shared = a_shared;
 	shared->camDir = -fvec3::Y;
@@ -104,8 +96,8 @@ inline void Module<Shared>::onWorldCreate(Shared *a_shared)
 	entityFuncs.onWorldCreate(shared);
 }
 
-template <typename Shared>
-inline void Module<Shared>::generate(ivec3_c &c)
+
+inline void Module::generate(ivec3_c &c)
 {
 	bool &genFlag = shared->logic.chunkGenerateFlags.chunkAt(c);
 	assert (genFlag);
@@ -155,8 +147,8 @@ inline void Module<Shared>::generate(ivec3_c &c)
  * Movement is relative to the camera (including the direction)
  * e.g. vector (0,0,1) (pointing to z positive) is FORWARDS
  */
-template <typename Shared>
-inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
+
+inline void Module::setWalk(fvec3_c &moveSpeeds)
 {
 	glm::vec3 removeY(1, 0, 1);
 	shared->physics.entityPhysics[shared->playerEntity].force =
@@ -164,8 +156,8 @@ inline void Module<Shared>::setWalk(fvec3_c &moveSpeeds)
 		+(shared->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15;
 }
 
-template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
+
+inline void Module::onEntityCreate(int e, EntityArgs args)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
@@ -174,8 +166,8 @@ inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 	entityFuncs.onEntityCreate(e, args);
 }
 
-template <typename Shared>
-inline void Module<Shared>::onEntityDestroy(int e)
+
+inline void Module::onEntityDestroy(int e)
 {
 	EntityLogics &logics = shared->logic.entityLogics[e];
 
@@ -184,14 +176,14 @@ inline void Module<Shared>::onEntityDestroy(int e)
 	entityFuncs.onEntityDestroy(e);
 }
 
-template <typename Shared>
-inline void Module<Shared>::onEntityUpdate(int e, Time time)
+
+inline void Module::onEntityUpdate(int e, Time time)
 {
 	entityFuncs.onEntityUpdate(e, time);
 }
 
-template <typename Shared>
-inline bool Module<Shared>::doneLoading()
+
+inline bool Module::doneLoading()
 {
 	bool result = true;
 	chunkGenerateFlags.iterate([&] (ivec3_c &c, bool &flag)
@@ -203,8 +195,8 @@ inline bool Module<Shared>::doneLoading()
 	return result;
 }
 
-template <typename Shared>
-inline void Module<Shared>::parallel(Time time)
+
+inline void Module::parallel(Time time)
 {
 	shared->logic.chunkGenerateFlags.iterate([&] (ivec3::cref c, bool &flag)
 	{
@@ -217,14 +209,14 @@ inline void Module<Shared>::parallel(Time time)
 	});
 }
 
-template <typename Shared>
-inline void Module<Shared>::onWorldUpdate(Time time)
+
+inline void Module::onWorldUpdate(Time time)
 {
 	shared->gameTime+= time;
 }
 
-template <typename Shared>
-inline void Module<Shared>::move(ivec3_c &m)
+
+inline void Module::move(ivec3_c &m)
 {
 	chunkGenerateFlags.shift(-m, [&] (ivec3 const &c)
 	{
@@ -233,8 +225,8 @@ inline void Module<Shared>::move(ivec3_c &m)
 	, [](ivec3_c &){});
 }
 
-template <typename Shared>
-inline void Module<Shared>::resetPlayer()
+
+inline void Module::resetPlayer()
 {
 	btVector3 &playerPos = shared->entityPos[shared->playerEntity];
 	int bx = Shared::CCOUNT_X*Shared::CSIZE_X / 2;
@@ -255,22 +247,22 @@ inline void Module<Shared>::resetPlayer()
 	std::cerr << "ERROR: Cannot reset player.\n";
 }
 
-template <typename Shared>
-inline void Module<Shared>::jump()
+
+inline void Module::jump()
 {
 	// sometimes doesnt jump although on ground
 	//if (shared->onGround())
 		shared->physics.entityPhysics[shared->playerEntity].body->applyCentralImpulse(btVector3(0, 7, 0));
 }
 
-template <typename Shared>
-inline void Module<Shared>::use()
+
+inline void Module::use()
 {
 
 }
 
-template <typename Shared>
-inline void Module<Shared>::take()
+
+inline void Module::take()
 {
 	// if selected block
 	ivec3 b1, b2;
@@ -314,8 +306,8 @@ inline void Module<Shared>::take()
 	}
 }
 
-template <typename Shared>
-inline void Module<Shared>::supertake()
+
+inline void Module::supertake()
 {
 	int &heldEntity = shared->logic.entityLogics[shared->playerEntity].player.heldEntity;
 	if (heldEntity != -1)
@@ -328,8 +320,8 @@ inline void Module<Shared>::supertake()
 	}
 }
 
-template <typename Shared>
-inline void Module<Shared>::place()
+
+inline void Module::place()
 {
 	int &heldEnt = shared->logic.entityLogics[shared->playerEntity].player.heldEntity;
 	if (heldEnt != -1 && shared->entityTypes[heldEnt] == EntityType::BLOCK)
@@ -346,4 +338,4 @@ inline void Module<Shared>::place()
 
 }
 
-#endif /* LOGIC_HPP_ */
+#endif//LOGIC_HPP_INCLUDED

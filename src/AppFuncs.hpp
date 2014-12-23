@@ -30,7 +30,8 @@ class AppFuncs
 private:
 	GLFWwindow *window;
 
-	Shared shared;
+	logic::Module *logicModule;
+	Shared *shared;
 	bool _running = true;
 	glm::vec3 rotation;
 
@@ -46,9 +47,10 @@ private:
 	}
 public:
 	AppFuncs(GLFWwindow *window)
-		: window(window),
-		  shared(), thread(&AppFuncs::parallel, this)
+		: window(window), thread(&AppFuncs::parallel, this)
 	{
+		logicModule = new logic::Module;
+		shared = new Shared(&logicModule, 1);
 		updateMouseGrab();
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
@@ -57,6 +59,7 @@ public:
 
 	~AppFuncs()
 	{
+		delete shared;
 		_running = false;
 		thread.join();
 	}
