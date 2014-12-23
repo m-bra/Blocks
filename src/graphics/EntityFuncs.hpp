@@ -1,10 +1,3 @@
-/*
- * EntityFuncs.hpp
- *
- *  Created on: Oct 12, 2014
- *      Author: merlin
- */
-
 #ifndef GENTITYFUNCS_HPP_
 #define GENTITYFUNCS_HPP_
 
@@ -12,8 +5,9 @@
 #include <GLFW/glfw3.h>
 #include "../vec.hpp"
 
-#include "../EntityListener.hpp"
-#include "../WorldListener.hpp"
+#include "../Registerable.hpp"
+
+#include "../logic/Module.hpp"
 
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
@@ -26,10 +20,11 @@ namespace graphics
 {
 
 template <typename Shared>
-class EntityFuncs : public WorldListener, public EntityListener
+class EntityFuncs : public WorldListener, public EntityListener, public Registerable
 {
 private:
 	Shared *shared;
+
 	BlockFuncs<Shared> *blockFuncs;
 	GLuint blockTbo;
 public:

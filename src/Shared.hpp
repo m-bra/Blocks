@@ -1,5 +1,5 @@
-#ifndef WORLD_HPP_
-#define WORLD_HPP_
+#ifndef WORLD_HPP_INCLUDED
+#define WORLD_HPP_INCLUDED
 
 #include <iostream>
 #include <atomic>
@@ -7,6 +7,8 @@
 #include <ctime>
 #include <glm/glm.hpp>
 #include <map>
+#include <cstdint>
+#include <typeinfo>
 
 #include "vec.hpp"
 #include "EntityFieldArray.hpp"
@@ -17,7 +19,6 @@
 #include "physics/Module.hpp"
 
 #include "SharedTypes.hpp"
-#include <cstdint>
 
 #include "Registerable.hpp"
 
@@ -88,7 +89,7 @@ public:
 
 	EntityFieldArray<EntityType> entityTypes;
 	EntityFieldArray<fvec3> entityEyePos;
-	// brace init needed bc of most vexing parse -.-
+	// most vexing parse -.-
 	Indexer<btVector3> entityPos = Indexer<btVector3>(
 	[&] (int e) -> btVector3 &
 	{
@@ -102,6 +103,7 @@ public:
 	physics::Module<Shared> physics;
 	graphics::Module<Shared> graphics;
 
+	std::vector<Registerable *> registerables;
 	std::vector<WorldListener *> worldListeners;
 	std::vector<EntityListener *> entityListeners;
 	std::vector<LoadCallback *> loadCallbacks;
@@ -118,7 +120,7 @@ public:
 	float const reach = 50;
 	float const playerHeight = 2;
 
-	Shared(Registerable **registerables, int registerables_count)
+	Shared(Registerable **p_registerables, int registerables_count)
 	{
 		blockTypes.fill(BlockType::NONE);
 
@@ -126,16 +128,22 @@ public:
 		pos.x = (time(0) % 1000000) / 1000;
 
 		for (int i = 0; i < registerables_count; ++i)
+			registerables.push_back(p_registerables[i]);
+
+		for (Registerable *r : registerables)
 		{
-			if (registerable[i]->getEntityListener())
-				entityListeners.push_back(registerable[i]->getEntityListener());
-			if (registerable[i]->getWorldListener())
-				entityListeners.push_back(registerable[i]->getWorldListener());
-			if (registerable[i]->getChunkListener())
-				entityListeners.push_back(registerable[i]->getChunkListener());
-			if (registerable[i]->getLoadCallback())
-				entityListeners.push_back(registerable[i]->getLoadCallback());
+			if (r->getEntityListener())
+				entityListeners.push_back(r->getEntityListener());
+			if (r->getWorldListener())
+				worldListeners.push_back(r->getWorldListener());
+			if (r->getChunkListener())
+				chunkListeners.push_back(r->getChunkListener());
+			if (r->getLoadCallback())
+				loadCallbacks.push_back(r->getLoadCallback());
 		}
+
+		for (Registerable *r : registerables)
+			r->onRegister(this);
 
 		entityListeners.push_back(&physics);
 		chunkListeners.push_back(&physics);
@@ -159,6 +167,15 @@ public:
 		destroyEntity(playerEntity);
 		for (WorldListener *wl : worldListeners)
 			wl->onWorldDestroy();
+	}
+
+	template <typename T>
+	T *getRegisterableByType()
+	{
+		for (Registerable *r : registerables)
+			if (typeid(*r) = typeid(T))
+				return r;
+		return 0;
 	}
 
 	void setWindowSize(int x, int y)
@@ -368,4 +385,4 @@ ivec3 constexpr Shared::CSIZE;
 
 }
 
-#endif /* WORLD_HPP_ */
+#endif//WORLD_HPP_INCLUDED

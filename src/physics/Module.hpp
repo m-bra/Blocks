@@ -223,22 +223,22 @@ inline void Module<Shared>::destroyChunk(ivec3_c &c)
 template <typename Shared>
 inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 {
-	EntityPhysics &physics = shared->physics.entityPhysics[e];
+	EntityPhysics &physics = entityPhysics[e];
 
 	assert (!physics.created);
 	entityFuncs.onEntityCreate(e, args);
 	assert(physics.shape && physics.motionState && physics.body);
 	physics.created = true;
-	shared->physics.physicsWorld->addRigidBody(physics.body);
+	physicsWorld->addRigidBody(physics.body);
 }
 
 template <typename Shared>
 inline void Module<Shared>::onEntityDestroy(int e)
 {
-	EntityPhysics &physics = shared->physics.entityPhysics[e];
+	EntityPhysics &physics = entityPhysics[e];
 
 	assert(physics.created);
-	shared->physics.physicsWorld->removeRigidBody(physics.body);
+	physicsWorld->removeRigidBody(physics.body);
 	entityFuncs.onEntityDestroy(e);
 	assert(!physics.shape && !physics.motionState && !physics.body);
 	physics.created = false;
@@ -289,7 +289,7 @@ template <typename Shared>
 inline void Module<Shared>::parallel(Time time)
 {
 	// update chunks
-	shared->physics.chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
+	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
 	{
 		if (physics.dirty && !shapeBuf)
 		{

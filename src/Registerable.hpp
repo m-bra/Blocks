@@ -16,6 +16,7 @@ public:
     virtual LoadCallback *getLoadCallback() {return 0;}
     virtual ChunkListener *getChunkListener() {return 0;}
     virtual WorldListener *getWorldListener() {return 0;}
+    virtual void onRegister(class Shared *shared);
 };
 
 }

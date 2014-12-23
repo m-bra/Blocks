@@ -24,9 +24,7 @@ using namespace cimg_library;
 #include "../ChunkFieldArray.hpp"
 #include "../BlockFieldArray.hpp"
 
-#include "../WorldListener.hpp"
-#include "../ChunkListener.hpp"
-#include "../EntityListener.hpp"
+#include "../Registerable.hpp"
 
 #include "../SharedTypes.hpp"
 #include "Types.hpp"
@@ -40,7 +38,7 @@ namespace graphics
 {
 
 template <typename Shared>
-class Module : public WorldListener, public ChunkListener, public EntityListener
+class Module : public Registerable, public WorldListener, public ChunkListener, public EntityListener
 {
 private:
 	friend class EntityFuncs<Shared>;
@@ -50,9 +48,9 @@ private:
 	template <typename T>
 	using BlockFieldArray = BlockFieldArray<typename Shared::BlockFieldArraySize, T>;
 
-	struct Context
+	struct _Context
 	{
-		Context()
+		_Context()
 		{
 		    gll::init();
 			gll::setDepthTest(true);
@@ -96,6 +94,7 @@ public:
 	void onWorldCreate(Shared *shared);
 	void onWorldDestroy();
 	void onWorldUpdate(Time time);
+	WorldListener *getWorldListener() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
@@ -104,6 +103,7 @@ public:
 	{
 		entityGraphics.resize(newsize);
 	}
+	EntityListener *getEntityListener() {return this;}
 
 	void setWindowSize(int x, int y);
 	void parallel(Time time);
@@ -111,7 +111,8 @@ public:
 	bool buildChunk(ivec3_c &);
 	bool canMove();
 	void move(ivec3_c &m);
-	void onChunkChange(ivec3_c &c);
+	void onChunkChange(ivec3_c &c
+	ChunkListener *getChunkListener() {return this;}
 };
 
 template <typename Shared>
@@ -249,7 +250,7 @@ inline void Module<Shared>::onWorldCreate(Shared *shared)
 template <typename Shared>
 inline void Module<Shared>::onWorldDestroy()
 {
-	shared->graphics.chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &cg)
+	chunkGraphics.iterate([&] (ivec3 const &c, ChunkGraphics &cg)
 	{
 		cg.destroy();
 		return true;
@@ -270,7 +271,7 @@ inline void Module<Shared>::setWindowSize(int x, int y)
 template <typename Shared>
 inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 {
-	EntityGraphics &eg = shared->graphics.entityGraphics[e];
+	EntityGraphics &eg = entityGraphics[e];
 	assert(!eg.created);
 	eg.created = true;
 
@@ -299,7 +300,7 @@ inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
 template <typename Shared>
 inline void Module<Shared>::onEntityDestroy(int e)
 {
-	EntityGraphics &eg = shared->graphics.entityGraphics[e];
+	EntityGraphics &eg = entityGraphics[e];
 	assert(eg.created);
 
 	entityFuncs.onEntityDestroy(e);
@@ -329,8 +330,8 @@ inline void Module<Shared>::onWorldUpdate(Time time)
 	if (!vertexBufFlushed.load())
 		if (vertexBufLock.try_lock())
 		{
-			GLuint vbo = shared->graphics.chunkGraphics.chunkAt(vertexBufChunk).vbo;
-			GLuint vao = shared->graphics.chunkGraphics.chunkAt(vertexBufChunk).vao;
+			GLuint vbo = chunkGraphics.chunkAt(vertexBufChunk).vbo;
+			GLuint vao = chunkGraphics.chunkAt(vertexBufChunk).vao;
 
 			chunkGraphics.chunkAt(vertexBufChunk).vertCount = vertexBuf.size();
 
@@ -369,7 +370,7 @@ inline void Module<Shared>::render()
 
 	program.bind();
 
-	fvec3 eyePos = shared->entityPos[shared->playerEntity] + shared->entity;
+	fvec3 eyePos = shared->entityPos[shared->playerEntity];
 	glUniform3f(uniforms.eyePosXYZ, eyePos.x, eyePos.y, eyePos.z);
 	glUniform3f(uniforms.lightXYZ,  eyePos.x, eyePos.y + 200, eyePos.z);
 
@@ -409,14 +410,13 @@ inline void Module<Shared>::render()
 
 	entityGraphics.iterate([&] (int e, EntityGraphics &eg)
 	{
-		if (!eg.created || !shared->physics.entityPhysics[e].created)
+		if (!eg.created)
 			return true;
 		glBindVertexArray(eg.vao);
 
 		glm::mat4 model;
 		shared->physics.entityPhysics[e].body->getWorldTransform()
 			.getOpenGLMatrix(&model[0][0]);
-		//model = glm::translate(model, (glm::vec3)-shared->pos);
 		glm::mat4 const &finalTransform = projview * model;
 		glUniformMatrix4fv(uniforms.mvp, 1, false, &finalTransform[0][0]);
 		glUniformMatrix4fv(uniforms.model, 1, false, &model[0][0]);
