@@ -13,10 +13,7 @@
 #include "../EntityFieldArray.hpp"
 #include "../vec.hpp"
 
-#include "../ChunkListener.hpp"
-#include "../EntityListener.hpp"
-#include "../LoadCallback.hpp"
-#include "../WorldListener.hpp"
+#include "../Registerable.hpp"
 
 #include "Types.hpp"
 #include "EntityFuncs.hpp"
@@ -29,15 +26,10 @@ namespace physics
 {
 
 template <typename Shared>
-class Module : public ChunkListener, public EntityListener, public LoadCallback, public WorldListener
+class Module : public Registerable, public ChunkListener, public EntityListener, public LoadCallback, public WorldListener, public PhysicsCallback
 {
 private:
-	template <typename T>
-	using ChunkFieldArray = ChunkFieldArray<typename Shared::ChunkFieldArraySize, T>;
-	template <typename T>
-	using BlockFieldArray = BlockFieldArray<typename Shared::BlockFieldArraySize, T>;
-
-	Shared *shared;
+	World *world;
 	BlockFuncs<Shared> blockFuncs;
 	EntityFuncs<Shared> entityFuncs;
 
@@ -58,264 +50,50 @@ public:
 
 	EntityFieldArray<EntityPhysics> entityPhysics;
 
-	//btCollisionShape *playerShape;
-	//btMotionState *playerMotionState;
-	//btRigidBody *playerBody;
-	//fvec3 playerForce;
+	void THIS_IS_A_TEST__CAN_YOU_LEAVE_OUT_ONE_PARAM_NAME_BUT_HAVE_SOME_OTHERS(int, char const *n) {n = "yes!";}
 
 	void onWorldCreate(Shared *shared);
 	void onWorldDestroy();
+	void onWorldUpdate(Time time);
+	WorldListener *getWorldListener() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
 	void onEntityUpdate(int e, Time time) {}
 	void onEntityArrayResize(int newSize);
-
-	void onWorldUpdate(Time time);
+	EntityListener *getEntityListener() {return this;}
 
 	bool doneLoading();
+	LoadCallback *getLoadCallback() {return this;}
 
-	bool getSelectedBlock(fvec3::cref from, fvec3::cref to, ivec3 &b1, ivec3 &b2);
-	int getSelectedEntity(fvec3::cref from, fvec3::cref to);
+	bool getSelectedBlock(fvec3_c &from, fvec3_c &to, ivec3 &b1, ivec3 &b2);
+	int getSelectedEntity(fvec3_c &from, fvec3_c &to);
 	void processDirtyEntity(int e);
 	void update(Time time);
 	void parallel(Time time);
 
-	bool canMove()
+	bool canMove() {return !shapeBuf;}
+	void move(ivec3_c &m);
+	void onChunkChange(ivec3_c &c) {chunkPhysics.chunkAt(c).dirty = true;}
+	ChunkListener *getChunkListener() {return this;}
+
+	void setEntityPos(int e, fvec3_c &pos)
 	{
-		return !shapeBuf;
+		btTransform t = entityPhysics[e].body->getMotionState()->getWorldTransform();
+		t.setOrigin(pos.bt());
+		entityPhysics[e].body->getMotionState()->setWorldTransform(t);
 	}
 
-	void move(ivec3_c &m)
+	fvec3 getEntityPos(int e)
 	{
-		auto createChunk = [&] (ivec3_c &c)
-		{
-			this->createChunk(c);
-		};
-		auto destroyChunk = [&] (ivec3_c &c)
-		{
-			this->destroyChunk(c);
-		};
-		chunkPhysics.shift(-m, createChunk, destroyChunk);
-		chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
-		{
-			physics.body->getWorldTransform().setOrigin(c.bt() * Shared::CSIZE.bt());
-			return true;
-		});
-
-		btTransform trans;
-
-		entityPhysics.iterate([&] (int e, EntityPhysics &physics)
-		{
-			if (physics.created)
-				physics.body->getWorldTransform().getOrigin()-= m.bt() * Shared::CSIZE.bt();
-			return true;
-		});
+		return entityPhysics[e].body->getMotionState()->getWorldTransform().getOrigin();
 	}
 
-	void onChunkChange(ivec3_c &c)
+	void getEntityOpenGLMatrix(int e, float *matrix)
 	{
-		chunkPhysics.chunkAt(c).dirty = true;
+		return entityPhysics[e].body->getWorldTransform()->getOpenGLMatrix();	
 	}
 };
-
-template <typename Shared>
-inline void Module<Shared>::onWorldCreate(Shared *a_shared)
-{
-	shared = a_shared;
-	blockFuncs.onWorldCreate(shared);
-	entityFuncs.onWorldCreate(shared);
-
-	broadphase = new btDbvtBroadphase();
-	collisionConfig = new btDefaultCollisionConfiguration();
-	dispatcher = new btCollisionDispatcher(collisionConfig);
-	solver = new btSequentialImpulseConstraintSolver;
-	physicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfig);
-	physicsWorld->setGravity(btVector3(0, -10, 0));
-
-	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
-	{
-		createChunk(c);
-		return true;
-	});
-}
-
-template <typename Shared>
-inline void Module<Shared>::onWorldDestroy()
-{
-	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
-	{
-		destroyChunk(c);
-		return true;
-	});
-
-	delete physicsWorld;
-	delete solver;
-	delete collisionConfig;
-	delete dispatcher;
-	delete broadphase;
-}
-
-template <typename Shared>
-inline bool Module<Shared>
-::getSelectedBlock(fvec3_c &from, fvec3_c &to, ivec3 &b1, ivec3 &b2)
-{
-	btCollisionWorld::ClosestRayResultCallback rayCallBack(from.bt(), to.bt());
-	physicsWorld->rayTest(from.bt(), to.bt(), rayCallBack);
-
-	bool success = false;
-	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
-	{
-		if (rayCallBack.m_collisionObject == physics.body)
-		{
-			b1 = rayCallBack.m_hitPointWorld - rayCallBack.m_hitNormalWorld / 100;
-			b2 = rayCallBack.m_hitPointWorld + rayCallBack.m_hitNormalWorld / 100;
-			success = true;
-		}
-		return true;
-	});
-
-	return success;
-}
-
-template <typename Shared>
-inline int Module<Shared>
-::getSelectedEntity(fvec3_c &from, fvec3_c &to)
-{
-	btCollisionWorld::ClosestRayResultCallback rayCallBack(from.bt(), to.bt());
-	physicsWorld->rayTest(from.bt(), to.bt(), rayCallBack);
-
-	int result = -1;
-	if (rayCallBack.hasHit())
-	{
-		entityPhysics.iterate([&] (int e, EntityPhysics &po)
-		{
-			if (rayCallBack.m_collisionObject == po.body)
-				result = e;
-			return true;
-		});
-	}
-
-	return result;
-}
-
-template <typename Shared>
-inline void Module<Shared>::createChunk(ivec3_c &c)
-{
-	ChunkPhysics &physics = chunkPhysics.chunkAt(c);
-	physics.dirty = false;
-	physics.shape = new btCompoundShape();
-	physics.motionState = new btDefaultMotionState();
-	physics.body = new btRigidBody(0, physics.motionState, physics.shape, btVector3(0, 0, 0));
-	physicsWorld->addRigidBody(physics.body);
-}
-
-template <typename Shared>
-inline void Module<Shared>::destroyChunk(ivec3_c &c)
-{
-	ChunkPhysics &physics = chunkPhysics.chunkAt(c);
-	physicsWorld->removeRigidBody(physics.body);
-	delete physics.motionState;
-	delete physics.body;
-	delete physics.shape;
-}
-
-template <typename Shared>
-inline void Module<Shared>::onEntityCreate(int e, EntityArgs args)
-{
-	EntityPhysics &physics = entityPhysics[e];
-
-	assert (!physics.created);
-	entityFuncs.onEntityCreate(e, args);
-	assert(physics.shape && physics.motionState && physics.body);
-	physics.created = true;
-	physicsWorld->addRigidBody(physics.body);
-}
-
-template <typename Shared>
-inline void Module<Shared>::onEntityDestroy(int e)
-{
-	EntityPhysics &physics = entityPhysics[e];
-
-	assert(physics.created);
-	physicsWorld->removeRigidBody(physics.body);
-	entityFuncs.onEntityDestroy(e);
-	assert(!physics.shape && !physics.motionState && !physics.body);
-	physics.created = false;
-}
-
-template <typename Shared>
-inline void Module<Shared>::onEntityArrayResize(int newSize)
-{
-	entityPhysics.resize(newSize);
-}
-
-template <typename Shared>
-inline void Module<Shared>::onWorldUpdate(Time time)
-{
-	// flush shape buffer
-	if (shapeBuf && shapeBufLock.try_lock())
-	{
-		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
-
-		delete physics.shape;
-		physics.shape = shapeBuf;
-		shapeBuf = 0;
-
-		physics.body->setCollisionShape(physics.shape);
-		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
-		shapeBufChunk = ivec3(-1, -1, -1);
-		shapeBufLock.unlock();
-	}
-
-	//if (!shared->loading)
-	physicsWorld->stepSimulation(time, 5);
-}
-
-template <typename Shared>
-inline bool Module<Shared>::doneLoading()
-{
-	bool result = true;
-	chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
-	{
-		if (cp.dirty)
-			result = false;
-		return true;
-	});
-	return result;
-}
-
-template <typename Shared>
-inline void Module<Shared>::parallel(Time time)
-{
-	// update chunks
-	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
-	{
-		if (physics.dirty && !shapeBuf)
-		{
-			shared->blockWriteLock.lock(c);
-			shared->moveLock.lock();
-			shapeBufLock.lock();
-
-			shapeBufChunk = c;
-			shapeBuf = new btCompoundShape(false);
-
-			shared->blockTypes.iterateInChunk(c, [&] (ivec3::cref b, BlockType const &type)
-			{
-				blockFuncs.addBlockShape(c, b, shapeBuf);
-				return true;
-			});
-
-			physics.dirty = false;
-
-			shapeBufLock.unlock();
-			shared->moveLock.unlock();
-			shared->blockWriteLock.unlock(c);
-			return false;
-		}
-		return true;
-	});
-}
 
 }
 }

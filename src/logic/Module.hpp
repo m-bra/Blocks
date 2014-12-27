@@ -19,8 +19,7 @@
 #include "../EntityFieldArray.hpp"
 #include "../vec.hpp"
 
-#include "../Shared.hpp"
-#include "../SharedTypes.hpp"
+#include "../World.hpp"
 #include "../Registerable.hpp"
 
 #include "Types.hpp"
@@ -35,19 +34,15 @@ namespace logic
 class Module : public Registerable, public EntityListener, public WorldListener, public LoadCallback, public ChunkListener
 {
 private:
-	template <typename T>
-	using ChunkFieldArray = ChunkFieldArray<Shared::ChunkFieldArraySize, T>;
-	template <typename T>
-	using BlockFieldArray = BlockFieldArray<Shared::BlockFieldArraySize, T>;
-
-	Shared *shared;
+	World *world;
+	class physics::Module *physics;
 	int seed;
 	EntityFuncs<Shared> entityFuncs;
 public:
 	EntityFieldArray<EntityLogics> entityLogics;
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
-	void onWorldCreate(Shared *shared);
+	void onWorldCreate(World *world);
 	void onWorldUpdate(Time time);
 	void onWorldDestroy() {}
 	WorldListener *getWorldListener() {return this;}

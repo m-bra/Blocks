@@ -1,16 +1,10 @@
-/*
- * BlockFuncs.hpp
- *
- *  Created on: Oct 13, 2014
- *      Author: merlin
- */
+#ifndef PBLOCKFUNCS_HPP_INCLUDED
+#define PBLOCKFUNCS_HPP_INCLUDED
 
-#ifndef PBLOCKFUNCS_HPP_
-#define PBLOCKFUNCS_HPP_
-
+#include "btBulletDynamicsCommon.h"
 #include "../vec.hpp"
-#include "../SharedTypes.hpp"
-#include "../WorldListener.hpp"
+#include "../World.hpp"
+#include "../Registerable.hpp"
 #include "Types.hpp"
 
 namespace blocks
@@ -19,23 +13,22 @@ namespace blocks
 namespace physics
 {
 
-template <typename Shared>
 class BlockFuncs : public WorldListener
 {
 private:
-	Shared *shared;
+	World *world;
 public:
-	void onWorldCreate(Shared *a_shared) {shared = a_shared;}
+	void onWorldCreate(World *world) {this->world = world;}
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void addBlockShape(ivec3::cref c, ivec3::cref b, btCompoundShape *chunkShape)
+	void addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkShape)
 	{
 		static btBoxShape box(btVector3(.5, .5, .5));
 		// b relative to its chunk
-		ivec3 b_c = b - c * ivec3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z);
+		ivec3 b_c = b - c * world->size;
 
-		BlockType &type = shared->blockTypes.blockAt(b);
+		BlockType &type = world->blockTypes.blockAt(b);
 		switch (type)
 		{
 		case BlockType::GROUND:

@@ -1,12 +1,5 @@
-/*
- * Types.hpp
- *
- *  Created on: Oct 17, 2014
- *      Author: merlin
- */
-
-#ifndef GTYPES_HPP_
-#define GTYPES_HPP_
+#ifndef GTYPES_HPP_INCLUDED
+#define GTYPES_HPP_INCLUDED
 
 #include <GL/glew.h>
 

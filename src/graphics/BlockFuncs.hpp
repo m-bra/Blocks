@@ -7,9 +7,9 @@
 #include "../Logger.hpp"
 #include "../vec.hpp"
 
-#include "../WorldListener.hpp"
+#include "../World.hpp"
+#include "../Registerable.hpp"
 
-#include "../SharedTypes.hpp"
 #include "Types.hpp"
 
 namespace blocks
@@ -18,15 +18,14 @@ namespace blocks
 namespace graphics
 {
 
-template <typename Shared>
 class BlockFuncs : public WorldListener
 {
 private:
-	Shared *shared;
+	World *world;
 public:
-	void onWorldCreate(Shared *a_shared)
+	void onWorldCreate(World *a_world)
 	{
-		shared = a_shared;
+		world = a_world;
 	}
 
 	void onWorldDestroy() {}
@@ -34,7 +33,7 @@ public:
 
 	bool isBlockVisible(ivec3 const &b)
 	{
-		BlockType blockType = shared->blockTypes.blockAt(b);
+		BlockType blockType = world->blockTypes.blockAt(b);
 		switch (blockType)
 		{
 		case BlockType::NONE:
@@ -80,7 +79,7 @@ public:
 
 	std::pair<glm::vec2, glm::vec2> getBlockTexCoords(ivec3 const &b)
 	{
-		return getBlockTypeTexCoords(shared->blockTypes.blockAt(b));
+		return getBlockTypeTexCoords(world->blockTypes.blockAt(b));
 	}
 };
 

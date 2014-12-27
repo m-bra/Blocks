@@ -31,6 +31,8 @@ private:
 	GLFWwindow *window;
 
 	logic::Module *logicModule;
+	graphics::Module *graphicsModule;
+	physics::Module *physicsModule;
 	Shared *shared;
 	bool _running = true;
 	glm::vec3 rotation;
@@ -50,7 +52,9 @@ public:
 		: window(window), thread(&AppFuncs::parallel, this)
 	{
 		logicModule = new logic::Module;
-		shared = new Shared(&logicModule, 1);
+		graphicsModule = new graphics::Module;
+		physicsModule = new physics::Module;
+		shared = new Shared(&std::array {logicModule, graphicsModule, physicsModule}[0], 3);
 		updateMouseGrab();
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
@@ -60,6 +64,9 @@ public:
 	~AppFuncs()
 	{
 		delete shared;
+		delete physicsModule;
+		delete graphicsModule;
+		delete logicModule;
 		_running = false;
 		thread.join();
 	}

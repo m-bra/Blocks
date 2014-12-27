@@ -5,6 +5,8 @@
 #include "WorldListener.hpp"
 #include "ChunkListener.hpp"
 #include "EntityListener.hpp"
+#include "GraphicsCallback.hpp"
+#include "PhysicsCallback.hpp"
 
 namespace blocks
 {

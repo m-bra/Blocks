@@ -7,10 +7,8 @@
 
 #include "../Registerable.hpp"
 
+#include "../World.hpp"
 #include "../logic/Module.hpp"
-
-#include "../SharedTypes.hpp"
-#include "Types.hpp"
 #include "BlockFuncs.hpp"
 
 namespace blocks
@@ -19,108 +17,35 @@ namespace blocks
 namespace graphics
 {
 
-template <typename Shared>
 class EntityFuncs : public WorldListener, public EntityListener, public Registerable
 {
 private:
-	Shared *shared;
+	logic::Module *logic;
+	class Module *graphics;
+	World *world;
 
 	BlockFuncs<Shared> *blockFuncs;
 	GLuint blockTbo;
 public:
-	void setBlockFuncs(BlockFuncs<Shared> *blockFuncs) {this->blockFuncs = blockFuncs;}
-	void onWorldCreate(Shared *shared) {this->shared = shared;}
+	EntityFuncs(class Module *a_module) {graphics = a_module;}
+
+	void setBlockFuncs(BlockFuncs *a_blockFuncs) {blockFuncs = a_blockFuncs;}
+	void onWorldCreate(World *a_world) {world = a_world;}
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void onEntityCreate(int e, EntityArgs args)
+	void onRegister(World *world)
 	{
-		shared->graphics.entityGraphics[e].tbo = shared->graphics.chunkTbo;
+		logic = world->getFirstRegisterableByType();
+		assert(logic);
 	}
 
+	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e) {}
 	void onEntityArrayResize(int newsize) {}
 	void onEntityUpdate(int e, Time time) {}
 
-	int putVertices(GLuint vbo, int e)
-	{
-		EntityType const &type = shared->entityTypes[e];
-		logic::EntityLogics &data = shared->logic.entityLogics[e];
-
-		BlockType texType;
-		switch (type)
-		{
-		case EntityType::BLOCK:
-			texType = data.blockEntity.blockType;
-			break;
-		case EntityType::BOT:
-			texType = BlockType::COMPANION;
-			break;
-		default:
-			std::stringstream ss;
-			ss << "Trying to get vertices of entity which does not have any (type = " << (int) type << ")";
-			Log::error(ss);
-			break;
-		}
-		auto t = blockFuncs->getBlockTypeTexCoords(texType);
-
-		float tx0 = t.first.x;
-		float tx1 = t.first.x + t.second.x;
-		float ty0 = t.first.y;
-		float ty1 = t.first.y + t.second.y;
-		float cube_verts[] = {
-			// left
-			-.5, -.5, -.5,  tx0, ty0,  -1, 0, 0,
-			-.5, +.5, +.5,  tx1, ty1,  -1, 0, 0,
-			-.5, +.5, -.5,  tx1, ty0,  -1, 0, 0,
-			-.5, -.5, -.5,  tx0, ty0,  -1, 0, 0,
-			-.5, -.5, +.5,  tx0, ty1,  -1, 0, 0,
-			-.5, +.5, +.5,  tx1, ty1,  -1, 0, 0,
-
-			// right
-			+.5, -.5, -.5,  tx0, ty0,  +1, 0, 0,
-			+.5, +.5, -.5,  tx1, ty0,  +1, 0, 0,
-			+.5, +.5, +.5,  tx1, ty1,  +1, 0, 0,
-			+.5, -.5, -.5,  tx0, ty0,  +1, 0, 0,
-			+.5, +.5, +.5,  tx1, ty1,  +1, 0, 0,
-			+.5, -.5, +.5,  tx0, ty1,  +1, 0, 0,
-
-			// bottom
-			-.5, -.5, -.5,  tx0, ty0,  0, -1, 0,
-			+.5, -.5, -.5,  tx1, ty0,  0, -1, 0,
-			+.5, -.5, +.5,  tx1, ty1,  0, -1, 0,
-			-.5, -.5, -.5,  tx0, ty0,  0, -1, 0,
-			+.5, -.5, +.5,  tx1, ty1,  0, -1, 0,
-			-.5, -.5, +.5,  tx0, ty1,  0, -1, 0,
-
-			// top
-			-.5, +.5, -.5,  tx0, ty0,  0, +1, 0,
-			+.5, +.5, +.5,  tx1, ty1,  0, +1, 0,
-			+.5, +.5, -.5,  tx1, ty0,  0, +1, 0,
-			-.5, +.5, -.5,  tx0, ty0,  0, +1, 0,
-			-.5, +.5, +.5,  tx0, ty1,  0, +1, 0,
-			+.5, +.5, +.5,  tx1, ty1,  0, +1, 0,
-
-			// back
-			-.5, -.5, -.5,  tx0, ty0,  0, 0, -1,
-			+.5, +.5, -.5,  tx1, ty1,  0, 0, -1,
-			+.5, -.5, -.5,  tx1, ty0,  0, 0, -1,
-			-.5, -.5, -.5,  tx0, ty0,  0, 0, -1,
-			-.5, +.5, -.5,  tx0, ty1,  0, 0, -1,
-			+.5, +.5, -.5,  tx1, ty1,  0, 0, -1,
-
-			// front
-			-.5, -.5, +.5,  tx0, ty0,  0, 0, +1,
-			+.5, -.5, +.5,  tx1, ty0,  0, 0, +1,
-			+.5, +.5, +.5,  tx1, ty1,  0, 0, +1,
-			-.5, -.5, +.5,  tx0, ty0,  0, 0, +1,
-			+.5, +.5, +.5,  tx1, ty1,  0, 0, +1,
-			-.5, +.5, +.5,  tx0, ty1,  0, 0, +1,
-		};
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof (cube_verts), cube_verts, GL_STATIC_DRAW);
-		return sizeof (cube_verts) / sizeof (float);
-	}
+	int putVertices(GLuint vbo, int e);
 };
 
 }  // namespace graphics
