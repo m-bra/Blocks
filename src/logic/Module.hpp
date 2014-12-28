@@ -28,23 +28,25 @@
 namespace blocks
 {
 
+namespace physics {class Module;}
+
 namespace logic
 {
 
-class Module : public Registerable, public EntityListener, public WorldListener, public LoadCallback, public ChunkListener
+class Module : public Registerable, public EntityListener, public WorldListener, public LoadCallback, public ChunkListener, public ParallelCallback
 {
 private:
 	World *world;
-	class physics::Module *physics;
+	physics::Module *physics;
 	int seed;
-	EntityFuncs<Shared> entityFuncs;
+	EntityFuncs entityFuncs{this};
 public:
 	EntityFieldArray<EntityLogics> entityLogics;
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
 	void onWorldCreate(World *world);
 	void onWorldUpdate(Time time);
-	void onWorldDestroy() {}
+	void onWorldDestroy();
 	WorldListener *getWorldListener() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
@@ -58,6 +60,8 @@ public:
 
 	bool doneLoading();
 	LoadCallback *getLoadCallback() {return this;}
+
+	ParallelCallback *getParallelCallback() {return this;}
 
 	void generate(ivec3 const &c);
 	void parallel(Time time);

@@ -19,15 +19,16 @@ class ChunkFieldArray
 	}
 
 public:
-	ChunkFieldArray(ivec3_c &size)
-		: size(size)
+	void create(ivec3_c &size)
 	{
+		this->size = size;
 		array = new T[size.x * size.y * size.z];
 	}
 
-	~ChunkFieldArray()
+	void destroy()
 	{
 		delete[] array;
+		size = ivec3(0, 0, 0);
 	}
 
 	bool isValidChunkCoord(ivec3_c &c) const

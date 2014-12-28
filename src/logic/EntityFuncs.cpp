@@ -12,7 +12,7 @@ namespace logic
 void EntityFuncs::onWorldCreate(World *a_world)
 {
     world = a_world;
-    physics = world->getFirstByType<physics::Module>();
+    physics = world->getFirstRegisterableByType<physics::Module>();
 }
 
 void EntityFuncs::onEntityCreate(int e, EntityArgs ls)
@@ -47,7 +47,7 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
         btVector3 const pos = body->getWorldTransform().getOrigin();
 
         if (logic->entityLogics[world->playerEntity].player.heldEntity == e)
-            data.target = physics->getEntityPos(shared->playerEntity) + world->camDir * logic->entityLogics[world->playerEntity].player.holdDistance;
+            data.target = physics->getEntityPos(world->playerEntity) + world->camDir * logic->entityLogics[world->playerEntity].player.holdDistance;
 
         if (data.moveToTarget)
         {
@@ -82,9 +82,9 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
             data.fixTime-= time;
             if (data.fixTime < 0)
             {
-                world->setBlockType((ivec3) pos, logic.entityLogics[e].blockEntity.blockType);
+                world->setBlockType((ivec3) pos, logic->entityLogics[e].blockEntity.blockType);
                 world->destroyEntity(e);
-                world->graphics[0].buildChunk(ivec3(pos) / world->size);
+                world->graphics[0]->buildChunk(ivec3(pos) / world->size);
             }
         }
     }
@@ -119,6 +119,19 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
     }
 }
 
+void EntityFuncs::onEntityDrop(int e)
+{
+    // assert type == BLOCK
+    EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
+    data.moveToTarget = false;
+}
+
+void EntityFuncs::onEntityTake(int e)
+{
+	logic::EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
+	data.moveToTarget = true;
+	data.fixTime = -1;
+}
 
 }
 

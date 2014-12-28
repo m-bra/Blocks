@@ -52,9 +52,12 @@ void Module::checkGLError(std::string msg)
 void Module::onWorldCreate(World *a_world)
 {
 	world = a_world;
+	chunkTransforms.create(world->count);
+	chunkGraphics.create(world->count);
+
 	blockFuncs.onWorldCreate(world);
 	entityFuncs.setBlockFuncs(&blockFuncs);
-	entityFuncs.onWorldCreate(WorldListener);
+	entityFuncs.onWorldCreate(world);
 	vertexBufFlushed = true;
 
 	// shader
@@ -135,10 +138,12 @@ void Module::onWorldCreate(World *a_world)
 
 void Module::onWorldDestroy()
 {
+	chunkTransforms.destroy();
 	chunkGraphics.iterate([&] (ivec3_c &c, ChunkGraphics &cg)
 	{
 		cg.destroy();
 	});
+	chunkGraphics.destroy();
 
 	program.destroy();
 	checkGLError("End");
@@ -243,15 +248,15 @@ void Module::render()
 
 	program.bind();
 
-	fvec3 eyePos = world->physics[0].getEntityPos(world->playerEntity);
+	fvec3 eyePos = world->getEntityPos(world->playerEntity);
 	glUniform3f(uniforms.eyePosXYZ, eyePos.x, eyePos.y, eyePos.z);
 	glUniform3f(uniforms.lightXYZ,  eyePos.x, eyePos.y + 200, eyePos.z);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, chunkTbo);
 
-	projview = projection * glm::lookAt(playerPos.glm(),
-		playerPos.glm() + world->camDir.glm(), world->camUp.glm());
+	projview = projection * glm::lookAt(eyePos.glm(),
+		eyePos.glm() + world->camDir.glm(), world->camUp.glm());
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -264,7 +269,7 @@ void Module::render()
 	chunkGraphics.iterate([&] (ivec3_c &c, ChunkGraphics &cg)
 	{
 		glBindVertexArray(cg.vao);
-		glm::mat4 const &model = chunkTransforms.chunkAt(c);
+		glm::mat4 const &model = chunkTransforms[c];
 		glm::mat4 const &finalTransform = projview * model;
 		glUniformMatrix4fv(uniforms.mvp, 1, false, &finalTransform[0][0]);
 		glUniformMatrix4fv(uniforms.model, 1, false, &model[0][0]);
@@ -288,7 +293,7 @@ void Module::render()
 		glBindVertexArray(eg.vao);
 
 		glm::mat4 model;
-		world->physics[0].getEntityOpenGLMatrix(e, &model[0][0]);
+		world->physics[0]->getEntityOpenGLMatrix(e, &model[0][0]);
 		glm::mat4 const &finalTransform = projview * model;
 		glUniformMatrix4fv(uniforms.mvp, 1, false, &finalTransform[0][0]);
 		glUniformMatrix4fv(uniforms.model, 1, false, &model[0][0]);
@@ -349,9 +354,9 @@ bool Module::buildChunk(ivec3_c &c)
 					auto it = components.begin();
 					while (it != components.end())
 					{
-						vertexBuf[currChunkVertex].x = (b.x-c.x*Shared::CSIZE_X) + *(it++);
-						vertexBuf[currChunkVertex].y = (b.y-c.y*Shared::CSIZE_Y) + *(it++);
-						vertexBuf[currChunkVertex].z = (b.z-c.z*Shared::CSIZE_Z) + *(it++);
+						vertexBuf[currChunkVertex].x = (b.x-c.x*world->size.x) + *(it++);
+						vertexBuf[currChunkVertex].y = (b.y-c.y*world->size.y) + *(it++);
+						vertexBuf[currChunkVertex].z = (b.z-c.z*world->size.z) + *(it++);
 						vertexBuf[currChunkVertex].u = t1.x + *(it++) * t2.x;
 						vertexBuf[currChunkVertex].v = t1.y + *(it++) * t2.y;
 						vertexBuf[currChunkVertex].nx = *(it++);

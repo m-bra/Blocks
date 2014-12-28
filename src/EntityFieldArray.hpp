@@ -1,12 +1,5 @@
-/*
- * EntityFieldArray.hpp
- *
- *  Created on: Sep 30, 2014
- *      Author: merlin
- */
-
-#ifndef ENTITYFIELDARRAY_HPP_
-#define ENTITYFIELDARRAY_HPP_
+#ifndef ENTITYFIELDARRAY_HPP_INCLUDED
+#define ENTITYFIELDARRAY_HPP_INCLUDED
 
 #include <vector>
 #include <cassert>

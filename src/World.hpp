@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <cstdint>
-#include <typeinfo>
 
 #include "vec.hpp"
 #include "EntityFieldArray.hpp"
@@ -63,6 +62,7 @@ public:
 	std::vector<EntityListener *> entityListeners;
 	std::vector<LoadCallback *> loadCallbacks;
 	std::vector<ChunkListener *> chunkListeners;
+	std::vector<ParallelCallback *> parallelCallbacks;
 
 	Time gameTime;
 	bool loading = true;
@@ -82,17 +82,17 @@ public:
 	T *getFirstRegisterableByType()
 	{
 		for (Registerable *r : registerables)
-			if (typeid(*r) == typeid(T))
+			if (dynamic_cast<T *>(r))
 				return (T *) r;
 		return 0;
 	}
 
 	template <typename T>
-	void getRegisterablesByType(std::vector<T *> registerables)
+	void getRegisterablesByType(std::vector<T *> &arg)
 	{
 		for (Registerable *r : registerables)
-			if (typeid(*r) == typeid(T))
-				registerables.push_back(r);
+			if (dynamic_cast<T *>(r))
+				arg.push_back((T *) r);
 	}
 
 	void setWindowSize(int x, int y)
@@ -115,11 +115,25 @@ public:
 	int createEntity(EntityArgs args);
 	void destroyEntity(int e);
 
+	void setEntityPos(int e, fvec3_c &pos)
+	{
+		physics[0]->setEntityPos(e, pos);
+	}
+	fvec3 getEntityPos(int e)
+	{
+		return physics[0]->getEntityPos(e);
+	}
+
 	void resetPlayer();
 
 	void resizeEntityArrays();
 	void tryMove(ivec3_c &m);
 	void update(Time time);
+	void parallel(Time time)
+	{
+		for (ParallelCallback *p : parallelCallbacks)
+			p->parallel(time);
+	}
 };
 
 }

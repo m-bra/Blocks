@@ -7,6 +7,7 @@
 #include "EntityListener.hpp"
 #include "GraphicsCallback.hpp"
 #include "PhysicsCallback.hpp"
+#include "ParallelCallback.hpp"
 
 namespace blocks
 {
@@ -18,7 +19,8 @@ public:
     virtual LoadCallback *getLoadCallback() {return 0;}
     virtual ChunkListener *getChunkListener() {return 0;}
     virtual WorldListener *getWorldListener() {return 0;}
-    virtual void onRegister(class Shared *shared);
+    virtual ParallelCallback *getParallelCallback() {return 0;}
+    virtual void onRegister(class World *world) {}
 };
 
 }

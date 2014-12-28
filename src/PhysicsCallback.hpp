@@ -9,7 +9,7 @@ namespace blocks
 class PhysicsCallback
 {
 public:
-    virtual void setEntityPos(int e, fvec3 pos) = 0;
+    virtual void setEntityPos(int e, fvec3_c &pos) = 0;
     virtual fvec3 getEntityPos(int e) = 0;
     virtual void getEntityOpenGLMatrix(int e, float *matrix) = 0;
 };

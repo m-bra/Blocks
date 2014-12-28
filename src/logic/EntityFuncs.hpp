@@ -11,6 +11,8 @@
 namespace blocks
 {
 
+namespace physics {class Module;};
+
 namespace logic
 {
 
@@ -18,7 +20,8 @@ class EntityFuncs : public EntityListener, public WorldListener
 {
 private:
 	class Module *logic;
-	class physics::Module *physics;
+
+	physics::Module *physics;
 	World *world;
 public:
 	EntityFuncs(Module *a_module) : logic(a_module) {}
@@ -30,21 +33,8 @@ public:
 
 	void onEntityCreate(int e, EntityArgs ls);
 	void onEntityUpdate(int e, Time time);
-
-	void onEntityDrop(int e)
-	{
-		// assert type == BLOCK
-		EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
-		data.moveToTarget = false;
-	}
-
-	void onEntityTake(int e)
-	{
-		logic::EntityLogics::BlockEntity &data = shared->logic.entityLogics[e].blockEntity;
-		data.moveToTarget = true;
-		data.fixTime = -1;
-	}
-
+	void onEntityDrop(int e);
+	void onEntityTake(int e);
 	void onEntityDestroy(int e) {}
 	void onEntityArrayResize(int newsize) {}
 };

@@ -2,6 +2,12 @@
 
 #include "Module.hpp"
 
+namespace blocks
+{
+
+namespace physics
+{
+
 void EntityFuncs::onWorldCreate(World *world)
 {
     this->world = world;
@@ -26,7 +32,7 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
         break;
     case EntityType::PLAYER:
         mass = 50;
-        po.shape = new btCapsuleShape(.2, shared->playerHeight - .4);
+        po.shape = new btCapsuleShape(.2, world->playerHeight - .4);
         break;
     default:
         Log::error("Physics: Trying to create not supported entity");
@@ -59,7 +65,7 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
     EntityType type = world->entityTypes[e];
     EntityPhysics ephysics = physics->entityPhysics[e];
 
-    dphysics.body->applyCentralForce(ephysics.force.bt());
+    ephysics.body->applyCentralForce(ephysics.force.bt());
 
     switch (type)
     {
@@ -70,4 +76,8 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
     default:
         break;
     }
+}
+
+}
+
 }

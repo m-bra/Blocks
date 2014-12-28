@@ -17,7 +17,7 @@
 
 #include "vec.hpp"
 
-#include "Shared.hpp"
+#include "World.hpp"
 #include "logic/Module.hpp"
 #include "graphics/Module.hpp"
 #include "physics/Module.hpp"
@@ -33,7 +33,7 @@ private:
 	logic::Module *logicModule;
 	graphics::Module *graphicsModule;
 	physics::Module *physicsModule;
-	Shared *shared;
+	World *world;
 	bool _running = true;
 	glm::vec3 rotation;
 
@@ -49,21 +49,22 @@ private:
 	}
 public:
 	AppFuncs(GLFWwindow *window)
-		: window(window), thread(&AppFuncs::parallel, this)
+		: window(window)
 	{
 		logicModule = new logic::Module;
 		graphicsModule = new graphics::Module;
 		physicsModule = new physics::Module;
-		shared = new Shared(&std::array {logicModule, graphicsModule, physicsModule}[0], 3);
+		world = new World(&std::array<Registerable *, 3>{logicModule, graphicsModule, physicsModule}[0], 3);
 		updateMouseGrab();
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
 		glfwSetCursorPos(window, w/2, h/2);
+		thread = std::thread(&AppFuncs::parallel, this);
 	}
 
 	~AppFuncs()
 	{
-		delete shared;
+		delete world;
 		delete physicsModule;
 		delete graphicsModule;
 		delete logicModule;
@@ -78,9 +79,7 @@ public:
 		{
 			double currentTime = glfwGetTime();
 			double time = currentTime - lastTime;
-			shared.logic.parallel(time);
-			shared.physics.parallel(time);
-			shared.graphics.parallel(time);
+			world->parallel(time);
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			lastTime = currentTime;
 		}
@@ -93,7 +92,7 @@ public:
 
 	void frameBufEvent(int x, int y)
 	{
-		shared.setWindowSize(x, y);
+		world->setWindowSize(x, y);
 	}
 
 	void keyEvent(int key, int action, int mods)
@@ -113,20 +112,20 @@ public:
 				break;
 			}
 			case GLFW_KEY_ENTER:
-				shared.logic.resetPlayer();
+				logicModule->resetPlayer();
 				break;
 			case GLFW_KEY_SPACE:
-				shared.logic.jump();
+				logicModule->jump();
 				break;
 			case GLFW_KEY_E:
 			{
-				float const holdDistance = shared.logic.entityLogics[shared.playerEntity].player.holdDistance;
-				fvec3 pos = fvec3(shared.entityPos[shared.playerEntity]) + shared.camDir * (holdDistance + 1);
-				int e = shared.createEntity(EntityArgs {{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t) &pos}});
+				float const holdDistance = logicModule->entityLogics[world->playerEntity].player.holdDistance;
+				fvec3 pos = fvec3(world->getEntityPos(world->playerEntity) + world->camDir * (holdDistance + 1));
+				int e = world->createEntity(EntityArgs {{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t) &pos}});
 
-				shared.logic.entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
-			}
+				logicModule->entityLogics[e].blockEntity.blockType = BlockType::COMPANION;
 				break;
+			}
 			default:;
 			}
 
@@ -168,18 +167,18 @@ public:
 			else
 			{
 				if (button == GLFW_MOUSE_BUTTON_LEFT)
-					shared.logic.take();
+					logicModule->take();
 				else if (button == GLFW_MOUSE_BUTTON_RIGHT)
-					shared.logic.place();
+					logicModule->place();
 			}
 		}
 	}
 
 	void scrollEvent(double ticks)
 	{
-		float &holdDis = shared.logic.entityLogics[shared.playerEntity].player.holdDistance;
+		float &holdDis = logicModule->entityLogics[world->playerEntity].player.holdDistance;
 		holdDis+= ticks * .5;
-		holdDis = glm::clamp(holdDis, 2.f, shared.reach-1.f);
+		holdDis = glm::clamp(holdDis, 2.f, world->reach-1.f);
 	}
 
 	void moveEvent(double x, double y)
@@ -216,16 +215,16 @@ public:
 		if (moveBackward) m.z-= 1;
 		if (moveRight) m.x+= 1;
 		if (moveLeft) m.x-= 1;
-		shared.logic.setWalk(m);
+		logicModule->setWalk(m);
 
 		glm::mat4 mat = glm::yawPitchRoll(rotation.x, rotation.y, rotation.z);
-		shared.camDir = glm::vec3(mat * camDir4);
-		shared.camLeft = glm::vec3(mat * camLeft4);
-		shared.camUp = glm::vec3(mat * camUp4);
+		world->camDir = glm::vec3(mat * camDir4);
+		world->camLeft = glm::vec3(mat * camLeft4);
+		world->camUp = glm::vec3(mat * camUp4);
 
-		shared.update(time);
+		world->update(time);
 
-		if (shared.loading)
+		if (world->loading)
 			glfwSetWindowTitle(window, "Loading");
 		else
 			glfwSetWindowTitle(window, "Blocks");
@@ -233,7 +232,7 @@ public:
 
 	void render()
 	{
-		shared.graphics.render();
+		graphicsModule->render();
 	}
 };
 

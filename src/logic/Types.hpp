@@ -1,16 +1,9 @@
-/*
- * Types.hpp
- *
- *  Created on: Oct 17, 2014
- *      Author: merlin
- */
-
-#ifndef LTYPES_HPP_
-#define LTYPES_HPP_
+#ifndef LOGIC_TYPES_HPP_INCLUDED
+#define LOGIC_TYPES_HPP_INCLUDED
 
 #include <cstring>
 #include "../vec.hpp"
-#include "../SharedTypes.hpp"
+#include "../WorldTypes.hpp"
 
 namespace blocks
 {

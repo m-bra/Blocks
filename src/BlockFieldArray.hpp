@@ -24,8 +24,13 @@ class BlockFieldArray
 	}
 public:
 
-	BlockFieldArray(ivec3_c &count, ivec3_c &size) : count(count), size(size)
+	void create(ivec3_c &a_count, ivec3_c &a_size)
 	{
+		count = a_count;
+		size = a_size;
+
+		array = new T *[count.x * count.y * count.z];
+
 		ivec3 c;
 		for (c.x = 0; c.x < count.x; ++c.x)
 		for (c.y = 0; c.y < count.y; ++c.y)
@@ -33,13 +38,18 @@ public:
 			array[getChunkIndex(c)] = new T[size.x * size.y * size.z];
 	}
 
-	~BlockFieldArray()
+	void destroy()
 	{
 		ivec3 c;
 		for (c.x = 0; c.x < count.x; ++c.x)
 		for (c.y = 0; c.y < count.y; ++c.y)
 		for (c.z = 0; c.z < count.z; ++c.z)
 			delete[] array[getChunkIndex(c)];
+
+		delete[] array;
+
+		count = ivec3(0, 0, 0);
+		size = ivec3(0, 0, 0);
 	}
 
 	bool isValidChunkCoord(ivec3_c &c) const

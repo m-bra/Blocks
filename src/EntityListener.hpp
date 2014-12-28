@@ -1,7 +1,7 @@
 #ifndef ENTITY_LISTENER_HPP_INCLUDED
 #define ENTITY_LISTENER_HPP_INCLUDED
 
-#include "SharedTypes.hpp"
+#include "WorldTypes.hpp"
 #include <map>
 
 namespace blocks

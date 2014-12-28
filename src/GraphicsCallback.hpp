@@ -10,7 +10,7 @@ class GraphicsCallback
 {
 public:
     virtual void setWindowSize(int w, int h) = 0;
-    virtual void buildChunk(ivec3_c &c);
+    virtual bool buildChunk(ivec3_c &c) {return false;};
 };
 
 }

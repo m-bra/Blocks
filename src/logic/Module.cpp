@@ -11,6 +11,8 @@ namespace logic
 void Module::onWorldCreate(World *a_world)
 {
     world = a_world;
+    chunkGenerateFlags.create(world->count);
+
     world->camDir = -fvec3::Y;
     world->camLeft = -fvec3::X;
     world->camUp = fvec3::Y;
@@ -22,10 +24,14 @@ void Module::onWorldCreate(World *a_world)
     physics = world->getFirstRegisterableByType<physics::Module>();
 }
 
+void Module::onWorldDestroy()
+{
+    chunkGenerateFlags.destroy();
+}
 
 void Module::generate(ivec3_c &c)
 {
-    bool &genFlag = chunkGenerateFlags.chunkAt(c);
+    bool &genFlag = chunkGenerateFlags[c];
     assert (genFlag);
     genFlag = false;
 
@@ -144,7 +150,7 @@ void Module::move(ivec3_c &m)
 {
     chunkGenerateFlags.shift(-m, [&] (ivec3 const &c)
     {
-        chunkGenerateFlags.chunkAt(c) = true;
+        chunkGenerateFlags[c] = true;
     }
     , [](ivec3_c &){});
 }
@@ -152,7 +158,7 @@ void Module::move(ivec3_c &m)
 
 void Module::resetPlayer()
 {
-    btVector3 &playerPos = world->physics[0]->getEntityPos(world->playerEntity);
+    fvec3 playerPos = world->getEntityPos(world->playerEntity);
     int bx = world->count.x * world->size.x / 2;
     int bz = world->count.z * world->size.z / 2;
     for (int i = 0; i < 50; ++i)
@@ -162,7 +168,7 @@ void Module::resetPlayer()
                 && world->blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
                 && world->blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
             {
-                playerPos = btVector3(bx+.5, by+world->playerHeight/2, bz+.5);
+                world->setEntityPos(world->playerEntity, btVector3(bx+.5, by+world->playerHeight/2, bz+.5));
                 return;
             }
         bx = rand() % world->count.x * world->size.x;

@@ -1,7 +1,7 @@
-#ifndef BASIC_LISTENER_HPP_INCLUDED
-#define BASIC_LISTENER_HPP_INCLUDED
+#ifndef WORLD_LISTENER_HPP_INCLUDED
+#define WORLD_LISTENER_HPP_INCLUDED
 
-#include "SharedTypes.hpp"
+#include "WorldTypes.hpp"
 
 namespace blocks
 {
@@ -9,11 +9,11 @@ namespace blocks
 class WorldListener
 {
 public:
-    virtual void onWorldCreate(class Shared *shared) = 0;
+    virtual void onWorldCreate(class World *world) = 0;
     virtual void onWorldDestroy() = 0;
     virtual void onWorldUpdate(Time time) = 0;
 };
 
 }
 
-#endif
+#endif//WORLD_LISTENER_HPP_INCLUDED

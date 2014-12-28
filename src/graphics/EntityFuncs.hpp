@@ -24,7 +24,7 @@ private:
 	class Module *graphics;
 	World *world;
 
-	BlockFuncs<Shared> *blockFuncs;
+	BlockFuncs *blockFuncs;
 	GLuint blockTbo;
 public:
 	EntityFuncs(class Module *a_module) {graphics = a_module;}
@@ -36,7 +36,7 @@ public:
 
 	void onRegister(World *world)
 	{
-		logic = world->getFirstRegisterableByType();
+		logic = world->getFirstRegisterableByType<logic::Module>();
 		assert(logic);
 	}
 

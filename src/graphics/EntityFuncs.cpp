@@ -15,7 +15,7 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 int EntityFuncs::putVertices(GLuint vbo, int e)
 {
     EntityType const &type = world->entityTypes[e];
-    logic::EntityLogics &data = logic.entityLogics[e];
+    logic::EntityLogics &data = logic->entityLogics[e];
 
     BlockType texType;
     switch (type)

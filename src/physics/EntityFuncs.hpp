@@ -12,12 +12,14 @@
 namespace blocks
 {
 
+namespace physics {class Module;}
+
 namespace physics
 {
 class EntityFuncs : public EntityListener, public WorldListener
 {
 	World *world;
-	class physics::Module *physics;
+	physics::Module *physics;
 	btBoxShape blockShape;
 public:
 	EntityFuncs() : blockShape(btVector3(.5, .5, .5)) {};

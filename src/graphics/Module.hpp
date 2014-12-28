@@ -37,7 +37,8 @@ namespace blocks
 namespace graphics
 {
 
-class Module : public Registerable, public WorldListener, public ChunkListener, public EntityListener, public GraphicsCallback
+// multi inheritence :)))
+class Module : public Registerable, public WorldListener, public ChunkListener, public EntityListener, public GraphicsCallback, public ParallelCallback
 {
 private:
 	friend class EntityFuncs;
@@ -70,8 +71,8 @@ private:
 
 	World *world;
 
-	BlockFuncs<Shared> blockFuncs;
-	EntityFuncs<Shared> entityFuncs;
+	BlockFuncs blockFuncs;
+	EntityFuncs entityFuncs{this};
 
 	ChunkFieldArray<glm::mat4> chunkTransforms;
 
@@ -85,10 +86,12 @@ public:
 	ChunkFieldArray<ChunkGraphics> chunkGraphics;
 	EntityFieldArray<EntityGraphics> entityGraphics;
 
-	void onWorldCreate(Shared *shared);
+	void onWorldCreate(World *world);
 	void onWorldDestroy();
 	void onWorldUpdate(Time time);
 	WorldListener *getWorldListener() {return this;}
+
+	ParallelCallback *getParallelCallback() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
@@ -106,7 +109,7 @@ public:
 
 	bool canMove();
 	void move(ivec3_c &m);
-	void onChunkChange(ivec3_c &c
+	void onChunkChange(ivec3_c &c);
 	ChunkListener *getChunkListener() {return this;}
 };
 

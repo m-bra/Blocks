@@ -19,7 +19,7 @@ void Module::move(ivec3_c &m)
 	chunkPhysics.shift(-m, createChunk, destroyChunk);
 	chunkPhysics.iterate([&] (ivec3_c &c, ChunkPhysics &physics)
 	{
-		physics.body->getWorldTransform().setOrigin(c.bt() * Shared::CSIZE.bt());
+		physics.body->getWorldTransform().setOrigin(c.bt() * world->size.bt());
 		return true;
 	});
 
@@ -28,7 +28,7 @@ void Module::move(ivec3_c &m)
 	entityPhysics.iterate([&] (int e, EntityPhysics &physics)
 	{
 		if (physics.created)
-			physics.body->getWorldTransform().getOrigin()-= m.bt() * Shared::CSIZE.bt();
+			physics.body->getWorldTransform().getOrigin()-= m.bt() * world->size.bt();
 		return true;
 	});
 }
@@ -36,6 +36,8 @@ void Module::move(ivec3_c &m)
 void Module::onWorldCreate(World *a_world)
 {
 	world = a_world;
+	chunkPhysics.create(world->count);
+
 	blockFuncs.onWorldCreate(world);
 	entityFuncs.onWorldCreate(world);
 
@@ -60,6 +62,8 @@ void Module::onWorldDestroy()
 		destroyChunk(c);
 		return true;
 	});
+
+	chunkPhysics.destroy();
 
 	delete physicsWorld;
 	delete solver;
@@ -109,7 +113,7 @@ int Module::getSelectedEntity(fvec3_c &from, fvec3_c &to)
 
 void Module::createChunk(ivec3_c &c)
 {
-	ChunkPhysics &physics = chunkPhysics.chunkAt(c);
+	ChunkPhysics &physics = chunkPhysics[c];
 	physics.dirty = false;
 	physics.shape = new btCompoundShape();
 	physics.motionState = new btDefaultMotionState();
@@ -119,7 +123,7 @@ void Module::createChunk(ivec3_c &c)
 
 void Module::destroyChunk(ivec3_c &c)
 {
-	ChunkPhysics &physics = chunkPhysics.chunkAt(c);
+	ChunkPhysics &physics = chunkPhysics[c];
 	physicsWorld->removeRigidBody(physics.body);
 	delete physics.motionState;
 	delete physics.body;
@@ -158,14 +162,14 @@ void Module::onWorldUpdate(Time time)
 	// flush shape buffer
 	if (shapeBuf && shapeBufLock.try_lock())
 	{
-		ChunkPhysics &physics = chunkPhysics.chunkAt(shapeBufChunk);
+		ChunkPhysics &physics = chunkPhysics[shapeBufChunk];
 
 		delete physics.shape;
 		physics.shape = shapeBuf;
 		shapeBuf = 0;
 
 		physics.body->setCollisionShape(physics.shape);
-		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * btVector3(Shared::CSIZE_X, Shared::CSIZE_Y, Shared::CSIZE_Z));
+		physics.body->getWorldTransform().setOrigin(shapeBufChunk.bt() * world->size.bt());
 		shapeBufChunk = ivec3(-1, -1, -1);
 		shapeBufLock.unlock();
 	}
