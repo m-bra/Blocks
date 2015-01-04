@@ -85,8 +85,11 @@ public:
 	void getRegisterablesByType(std::vector<T *> &arg)
 	{
 		for (Registerable *r : registerables)
-			if (dynamic_cast<T *>(r))
-				arg.push_back((T *) r);
+		{
+			T *asT = dynamic_cast<T *>(r);
+			if (asT)
+				arg.push_back(asT);
+		}
 	}
 
 	void setWindowSize(int x, int y)

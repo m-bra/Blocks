@@ -11,31 +11,31 @@ template <typename T>
 class ChunkFieldArray
 {
 	T *array;
-	ivec3 size;
+	ivec3 count;
 
 	inline long getIndex(ivec3_c &c) const
 	{
-		return c.z * size.y * size.x + c.y * size.x + c.x;
+		return c.z * count.y * count.x + c.y * count.x + c.x;
 	}
 
 public:
-	void create(ivec3_c &size)
+	void create(ivec3_c &count)
 	{
-		this->size = size;
-		array = new T[size.x * size.y * size.z];
+		this->count = count;
+		array = new T[count.x * count.y * count.z];
 	}
 
 	void destroy()
 	{
 		delete[] array;
-		size = ivec3(0, 0, 0);
+		count = ivec3(0, 0, 0);
 	}
 
 	bool isValidChunkCoord(ivec3_c &c) const
 	{
-		return c.x >= 0 && c.x < size.x
-			&& c.y >= 0 && c.y < size.y
-			&& c.z >= 0 && c.z < size.z;
+		return c.x >= 0 && c.x < count.x
+			&& c.y >= 0 && c.y < count.y
+			&& c.z >= 0 && c.z < count.z;
 	}
 
 	T &operator [](ivec3_c &c)
@@ -54,9 +54,9 @@ public:
 	bool iterate_cond(F const &function)
 	{
 		ivec3 c;
-		for (c.x = 0; c.x < size.x; ++c.x)
-		for (c.y = 0; c.y < size.y; ++c.y)
-		for (c.z = 0; c.z < size.z; ++c.z)
+		for (c.x = 0; c.x < count.x; ++c.x)
+		for (c.y = 0; c.y < count.y; ++c.y)
+		for (c.z = 0; c.z < count.z; ++c.z)
 		{
 			if (!function(c, array[getIndex(c)]))
 				return false;
@@ -68,9 +68,9 @@ public:
 	bool iterate_cond(F const &function) const
 	{
 		ivec3 c;
-		for (c.x = 0; c.x < size.x; ++c.x)
-		for (c.y = 0; c.y < size.y; ++c.y)
-		for (c.z = 0; c.z < size.z; ++c.z)
+		for (c.x = 0; c.x < count.x; ++c.x)
+		for (c.y = 0; c.y < count.y; ++c.y)
+		for (c.z = 0; c.z < count.z; ++c.z)
 		{
 			if (!function(c, array[getIndex(c)]))
 				return false;
@@ -82,9 +82,9 @@ public:
 	void iterate(F const &function)
 	{
 		ivec3 c;
-		for (c.x = 0; c.x < size.x; ++c.x)
-		for (c.y = 0; c.y < size.y; ++c.y)
-		for (c.z = 0; c.z < size.z; ++c.z)
+		for (c.x = 0; c.x < count.x; ++c.x)
+		for (c.y = 0; c.y < count.y; ++c.y)
+		for (c.z = 0; c.z < count.z; ++c.z)
 			function(c, array[getIndex(c)]);
 	}
 
@@ -92,19 +92,16 @@ public:
 	void iterate(F const &function) const
 	{
 		ivec3 c;
-		for (c.x = 0; c.x < size.x; ++c.x)
-		for (c.y = 0; c.y < size.y; ++c.y)
-		for (c.z = 0; c.z < size.z; ++c.z)
+		for (c.x = 0; c.x < count.x; ++c.x)
+		for (c.y = 0; c.y < count.y; ++c.y)
+		for (c.z = 0; c.z < count.z; ++c.z)
 			function(c, array[getIndex(c)]);
 	}
 
 	void fill(T v = T())
 	{
-		ivec3 c;
-		for (c.x = 0; c.x < size.x; ++c.x)
-		for (c.y = 0; c.y < size.y; ++c.y)
-		for (c.z = 0; c.z < size.z; ++c.z)
-			array[getIndex(c)] = v;
+		for (long ci = 0; ci < count.x * count.y * count.z; ++ci)
+			array[ci] = v;
 	}
 
 	void shift(ivec3 const &m)
@@ -124,15 +121,15 @@ public:
 		// if positive, start big and go to beginning
 		// if zero, doesn't matter...
 		ivec3_c start(
-			shift.x < 0 ? 0 : size.x-1,
-			shift.y < 0 ? 0 : size.y-1,
-			shift.z < 0 ? 0 : size.z-1);
+			shift.x < 0 ? 0 : count.x-1,
+			shift.y < 0 ? 0 : count.y-1,
+			shift.z < 0 ? 0 : count.z-1);
 		ivec3_c dir(
 			shift.x < 0 ? 1 : -1,
 			shift.y < 0 ? 1 : -1,
 			shift.z < 0 ? 1 : -1);
 		// the EXCLUSIVE end
-		ivec3_c end = start + size*dir;
+		ivec3_c end = start + count*dir;
 
 		ivec3 c;
 		for (c.x = start.x; c.x != end.x; c.x+= dir.x)

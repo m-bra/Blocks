@@ -31,20 +31,14 @@ public:
 
 		array = new T *[count.x * count.y * count.z];
 
-		ivec3 c;
-		for (c.x = 0; c.x < count.x; ++c.x)
-		for (c.y = 0; c.y < count.y; ++c.y)
-		for (c.z = 0; c.z < count.z; ++c.z)
-			array[getChunkIndex(c)] = new T[size.x * size.y * size.z];
+		for (long ci = 0; ci < count.x * count.y * count.z; ++ci)
+			array[ci] = new T[size.x * size.y * size.z];
 	}
 
 	void destroy()
 	{
-		ivec3 c;
-		for (c.x = 0; c.x < count.x; ++c.x)
-		for (c.y = 0; c.y < count.y; ++c.y)
-		for (c.z = 0; c.z < count.z; ++c.z)
-			delete[] array[getChunkIndex(c)];
+		for (long ci = 0; ci < count.x * count.y * count.z; ++ci)
+			delete[] array[ci];
 
 		delete[] array;
 
@@ -231,16 +225,11 @@ public:
 
 	void fill(T v = T())
 	{
-		ivec3 c, b;
-		for (c.x = 0; c.x < count.x; ++c.x)
-		for (c.y = 0; c.y < count.y; ++c.y)
-		for (c.z = 0; c.z < count.z; ++c.z)
+		for (long ci = 0; ci < count.x * count.y * count.z; ++ci)
 		{
-			for (b.x = 0; b.x < size.x; ++b.x)
-			for (b.y = 0; b.y < size.y; ++b.y)
-			for (b.z = 0; b.z < size.z; ++b.z)
+			for (long bi = 0; bi < size.x * size.y * size.z; ++bi)
 			{
-				array[getChunkIndex(c)][getBlockIndex(b)] = v;
+				array[ci][bi] = v;
 			}
 		}
 	}

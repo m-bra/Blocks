@@ -47,9 +47,9 @@ public:
 	std::mutex physicsWorldBlock;
 
 	ChunkFieldArray<ChunkPhysics> chunkPhysics;
-	btCompoundShape *shapeBuf;
+	btCompoundShape *shapeBuf = 0;
 	std::mutex shapeBufLock;
-	ivec3 shapeBufChunk;
+	ivec3 shapeBufChunk{0, 0, 0};
 
 	EntityFieldArray<EntityPhysics> entityPhysics;
 
