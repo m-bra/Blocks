@@ -9,17 +9,15 @@
 #include "PhysicsCallback.hpp"
 #include "ParallelCallback.hpp"
 
+#include <vector>
+
 namespace blocks
 {
 
 class Registerable
 {
 public:
-    virtual EntityListener *getEntityListener() {return 0;}
-    virtual LoadCallback *getLoadCallback() {return 0;}
-    virtual ChunkListener *getChunkListener() {return 0;}
-    virtual WorldListener *getWorldListener() {return 0;}
-    virtual ParallelCallback *getParallelCallback() {return 0;}
+    virtual void getSubRegisterables(std::vector<Registerable *> &) {}
     virtual void onRegister(class World *world) {}
 };
 

@@ -1,18 +1,21 @@
-#ifndef GENTITYFUNCS_HPP_
-#define GENTITYFUNCS_HPP_
+#ifndef GRAPHICS_ENTITYFUNCS_HPP_INCLUDED
+#define GRAPHICS_ENTITYFUNCS_HPP_INCLUDED
+
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "../vec.hpp"
-
 #include "../Registerable.hpp"
-
-#include "../World.hpp"
-#include "../logic/Module.hpp"
-#include "BlockFuncs.hpp"
 
 namespace blocks
 {
+
+namespace logic {class Module;}
+
+class World;
 
 namespace graphics
 {
@@ -22,23 +25,16 @@ class EntityFuncs : public WorldListener, public EntityListener, public Register
 private:
 	logic::Module *logic;
 	class Module *graphics;
+	class BlockFuncs *blockFuncs;
 	World *world;
 
-	BlockFuncs *blockFuncs;
 	GLuint blockTbo;
 public:
-	EntityFuncs(class Module *a_module) {graphics = a_module;}
-
-	void setBlockFuncs(BlockFuncs *a_blockFuncs) {blockFuncs = a_blockFuncs;}
 	void onWorldCreate(World *a_world) {world = a_world;}
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}
 
-	void onRegister(World *world)
-	{
-		logic = world->getFirstRegisterableByType<logic::Module>();
-		assert(logic);
-	}
+	void onRegister(World *world);
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e) {}

@@ -1,5 +1,9 @@
+#include "precompiled.hpp"
+
 #include "EntityFuncs.hpp"
 #include "Module.hpp"
+#include "logic/Module.hpp"
+#include "BlockFuncs.hpp"
 
 namespace blocks
 {
@@ -7,15 +11,23 @@ namespace blocks
 namespace graphics
 {
 
-void EntityFuncs::onEntityCreate(int e, EntityArgs args)
+void EntityFuncs::onRegister(World *world)
 {
-    graphics->entityGraphics[e].tbo = graphics->chunkTbo;
+    logic = world->getFirstRegisterableByType<logic::Module>();
+    assert(logic);
+    graphics = world->getFirstRegisterableByType<Module>();
+    assert(graphics);
+    blockFuncs = world->getFirstRegisterableByType<BlockFuncs>();
+    assert(blockFuncs);
 }
 
-int EntityFuncs::putVertices(GLuint vbo, int e)
+void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 {
     EntityType const &type = world->entityTypes[e];
     logic::EntityLogics &data = logic->entityLogics[e];
+    EntityGraphics &eGraphics = graphics->entityGraphics[e];
+
+    eGraphics.tbo = graphics->chunkTbo;
 
     BlockType texType;
     switch (type)
@@ -87,9 +99,9 @@ int EntityFuncs::putVertices(GLuint vbo, int e)
         +.5, +.5, +.5,  tx1, ty1,  0, 0, +1,
         -.5, +.5, +.5,  tx0, ty1,  0, 0, +1,
     };
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, eGraphics.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof (cube_verts), cube_verts, GL_STATIC_DRAW);
-    return sizeof (cube_verts) / sizeof (float);
+    eGraphics.vertCount = sizeof (cube_verts) / sizeof (float);
 }
 
 }

@@ -1,3 +1,5 @@
+#include "precompiled.hpp"
+
 #include "EntityFuncs.hpp"
 
 #include "Module.hpp"
@@ -13,6 +15,9 @@ void EntityFuncs::onWorldCreate(World *a_world)
 {
     world = a_world;
     physics = world->getFirstRegisterableByType<physics::Module>();
+    assert(physics);
+    logic = world->getFirstRegisterableByType<Module>();
+    assert(logic);
 }
 
 void EntityFuncs::onEntityCreate(int e, EntityArgs ls)

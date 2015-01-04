@@ -1,13 +1,7 @@
 #ifndef WORLD_HPP_INCLUDED
 #define WORLD_HPP_INCLUDED
 
-#include <iostream>
-#include <atomic>
 #include <mutex>
-#include <ctime>
-#include <glm/glm.hpp>
-#include <map>
-#include <cstdint>
 
 #include "vec.hpp"
 #include "EntityFieldArray.hpp"

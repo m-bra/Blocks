@@ -9,9 +9,9 @@ namespace blocks
 class ChunkListener
 {
 public:
-    virtual bool canMove() = 0;
-    virtual void move(ivec3_c &m) = 0;
-    virtual void onChunkChange(ivec3_c &c) = 0;
+    virtual bool canMove() {return true;}
+    virtual void move(ivec3_c &m) {}
+    virtual void onChunkChange(ivec3_c &c) {}
 };
 
 }

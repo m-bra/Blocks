@@ -1,32 +1,28 @@
-#ifndef GRAPHICS_HPP_INCLUDED
-#define GRAPHICS_HPP_INCLUDED
+#ifndef GRAPHICS_GRAPHICS_HPP_INCLUDED
+#define GRAPHICS_GRAPHICS_HPP_INCLUDED
 
-#include <thread>
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
+
 #include <mutex>
-#include <chrono>
 #include <atomic>
 #include <vector>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/vector_angle.hpp>
+#include "../vec.hpp"
 
 #include <GLL/GLL.hpp>
 #include <GL/glew.h>
-#include "../CImg.h"
-using namespace cimg_library;
+#include <GLFW/glfw3.h>
 
-#include "../Logger.hpp"
-#include "../vec.hpp"
 
 #include "../ChunkFieldArray.hpp"
 #include "../BlockFieldArray.hpp"
 
 #include "../Registerable.hpp"
 
-#include "../World.hpp"
 #include "Types.hpp"
 #include "BlockFuncs.hpp"
 #include "EntityFuncs.hpp"
@@ -69,10 +65,10 @@ private:
 
 	GLuint chunkTbo, companionTbo;
 
-	World *world;
+	class World *world;
 
 	BlockFuncs blockFuncs;
-	EntityFuncs entityFuncs{this};
+	EntityFuncs entityFuncs;
 
 	ChunkFieldArray<glm::mat4> chunkTransforms;
 
@@ -89,9 +85,6 @@ public:
 	void onWorldCreate(World *world);
 	void onWorldDestroy();
 	void onWorldUpdate(Time time);
-	WorldListener *getWorldListener() {return this;}
-
-	ParallelCallback *getParallelCallback() {return this;}
 
 	void onEntityCreate(int e, EntityArgs args);
 	void onEntityDestroy(int e);
@@ -100,7 +93,12 @@ public:
 	{
 		entityGraphics.resize(newsize);
 	}
-	EntityListener *getEntityListener() {return this;}
+
+	void getSubRegisterables(std::vector<Registerable *> &subs)
+	{
+		subs.push_back(&entityFuncs);
+		subs.push_back(&blockFuncs);
+	}
 
 	void setWindowSize(int x, int y);
 	void parallel(Time time);
@@ -110,7 +108,6 @@ public:
 	bool canMove();
 	void move(ivec3_c &m);
 	void onChunkChange(ivec3_c &c);
-	ChunkListener *getChunkListener() {return this;}
 };
 
 }

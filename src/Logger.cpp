@@ -1,3 +1,5 @@
+#include "precompiled.hpp"
+
 #include "Logger.hpp"
 
 namespace Log

@@ -1,3 +1,5 @@
+#include "precompiled.hpp"
+
 #include "Module.hpp"
 
 namespace blocks
@@ -37,9 +39,6 @@ void Module::onWorldCreate(World *a_world)
 {
 	world = a_world;
 	chunkPhysics.create(world->count);
-
-	blockFuncs.onWorldCreate(world);
-	entityFuncs.onWorldCreate(world);
 
 	broadphase = new btDbvtBroadphase();
 	collisionConfig = new btDefaultCollisionConfiguration();
@@ -128,33 +127,6 @@ void Module::destroyChunk(ivec3_c &c)
 	delete physics.motionState;
 	delete physics.body;
 	delete physics.shape;
-}
-
-void Module::onEntityCreate(int e, EntityArgs args)
-{
-	EntityPhysics &physics = entityPhysics[e];
-
-	assert (!physics.created);
-	entityFuncs.onEntityCreate(e, args);
-	assert(physics.shape && physics.motionState && physics.body);
-	physics.created = true;
-	physicsWorld->addRigidBody(physics.body);
-}
-
-void Module::onEntityDestroy(int e)
-{
-	EntityPhysics &physics = entityPhysics[e];
-
-	assert(physics.created);
-	physicsWorld->removeRigidBody(physics.body);
-	entityFuncs.onEntityDestroy(e);
-	assert(!physics.shape && !physics.motionState && !physics.body);
-	physics.created = false;
-}
-
-void Module::onEntityArrayResize(int newSize)
-{
-	entityPhysics.resize(newSize);
 }
 
 void Module::onWorldUpdate(Time time)

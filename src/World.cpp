@@ -1,9 +1,21 @@
+#include "precompiled.hpp"
+
 #include "World.hpp"
 
 #include "Logger.hpp"
 
 namespace blocks
 {
+
+void pushRegisterableRecursively(std::vector<Registerable *> &registerables, Registerable *r)
+{
+	registerables.push_back(r);
+
+	std::vector<Registerable *> subs;
+	r->getSubRegisterables(subs);
+	for (Registerable *s : subs)
+		pushRegisterableRecursively(registerables, s);
+}
 
 World::World(Registerable **p_registerables, int registerables_count)
 {
@@ -16,20 +28,21 @@ World::World(Registerable **p_registerables, int registerables_count)
 	pos.x = (time(0) % 1000000) / 1000;
 
 	for (int i = 0; i < registerables_count; ++i)
-		registerables.push_back(p_registerables[i]);
+		pushRegisterableRecursively(registerables, p_registerables[i]);
 
 	for (Registerable *r : registerables)
 	{
-		if (r->getEntityListener())
-			entityListeners.push_back(r->getEntityListener());
-		if (r->getWorldListener())
-			worldListeners.push_back(r->getWorldListener());
-		if (r->getChunkListener())
-			chunkListeners.push_back(r->getChunkListener());
-		if (r->getLoadCallback())
-			loadCallbacks.push_back(r->getLoadCallback());
-		if (r->getParallelCallback())
-			parallelCallbacks.push_back(r->getParallelCallback());
+		EntityListener *asEntityListener = dynamic_cast<EntityListener *>(r);
+		WorldListener *asWorldListener = dynamic_cast<WorldListener *>(r);
+		ChunkListener *asChunkListener = dynamic_cast<ChunkListener *>(r);
+		LoadCallback *asLoadCallback = dynamic_cast<LoadCallback *>(r);
+		ParallelCallback *asParallelCallback = dynamic_cast<ParallelCallback *>(r);
+
+		if (asEntityListener) entityListeners.push_back(asEntityListener);
+		if (asWorldListener) worldListeners.push_back(asWorldListener);
+		if (asChunkListener) chunkListeners.push_back(asChunkListener);
+		if (asLoadCallback) loadCallbacks.push_back(asLoadCallback);
+		if (asParallelCallback) parallelCallbacks.push_back(asParallelCallback);
 	}
 
 	for (Registerable *r : registerables)

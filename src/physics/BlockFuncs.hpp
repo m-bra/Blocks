@@ -1,11 +1,15 @@
-#ifndef PBLOCKFUNCS_HPP_INCLUDED
-#define PBLOCKFUNCS_HPP_INCLUDED
+#ifndef PHYSICS_BLOCKFUNCS_HPP_INCLUDED
+#define PHYSICS_BLOCKFUNCS_HPP_INCLUDED
 
-#include "btBulletDynamicsCommon.h"
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
+
 #include "../vec.hpp"
-#include "../World.hpp"
 #include "../Registerable.hpp"
 #include "Types.hpp"
+
+class btCompoundShape;
 
 namespace blocks
 {
@@ -13,39 +17,15 @@ namespace blocks
 namespace physics
 {
 
-class BlockFuncs : public WorldListener
+class BlockFuncs : public WorldListener, public Registerable
 {
 private:
-	World *world;
+	class World *world;
+	class ThisClassDoesNotExistIHopeButIUseItForTestingWhetherWeCanStillPointToThisClass *lolTest;
 public:
-	void onWorldCreate(World *world) {this->world = world;}
-	void onWorldDestroy() {}
-	void onWorldUpdate(Time time) {}
+	void onWorldCreate(World *a_world) {world = a_world;}
 
-	void addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkShape)
-	{
-		static btBoxShape box(btVector3(.5, .5, .5));
-		// b relative to its chunk
-		ivec3 b_c = b - c * world->size;
-
-		BlockType &type = world->blockTypes.blockAt(b);
-		switch (type)
-		{
-		case BlockType::GROUND:
-		case BlockType::GROUND2:
-		case BlockType::COMPANION:
-			chunkShape->addChildShape(btTransform(btQuaternion(0, 0, 0, 1), (b_c + .5).bt()), &box);
-			break;
-		case BlockType::AIR:
-			break;
-		default:
-		{
-			std::stringstream ss;
-			ss << "Trying to get shape of block which does not have one (blockType = " << (int) type << ")";
-			Log::error(ss);
-		}
-		}
-	}
+	void addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkShape);
 };
 
 }  // namespace physics

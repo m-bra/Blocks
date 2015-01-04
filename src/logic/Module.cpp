@@ -1,4 +1,14 @@
+#include "precompiled.hpp"
+
 #include "Module.hpp"
+
+#include <fstream>
+#include <ctime>
+#include <iostream>
+#include <thread>
+#include <chrono>
+
+#include <glm/gtc/noise.hpp>
 
 #include "../physics/Module.hpp"
 
@@ -18,8 +28,6 @@ void Module::onWorldCreate(World *a_world)
     world->camUp = fvec3::Y;
 
     chunkGenerateFlags.fill(true);
-
-    entityFuncs.onWorldCreate(world);
 
     physics = world->getFirstRegisterableByType<physics::Module>();
 }
@@ -93,7 +101,6 @@ void Module::onEntityCreate(int e, EntityArgs args)
 
     assert(!logics.created);
     logics.created = true;
-    entityFuncs.onEntityCreate(e, args);
 }
 
 
@@ -103,15 +110,12 @@ void Module::onEntityDestroy(int e)
 
     assert(logics.created);
     logics.created = false;
-    entityFuncs.onEntityDestroy(e);
 }
 
 
 void Module::onEntityUpdate(int e, Time time)
 {
-    entityFuncs.onEntityUpdate(e, time);
 }
-
 
 bool Module::doneLoading()
 {

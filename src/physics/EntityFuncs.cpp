@@ -1,4 +1,7 @@
+#include "precompiled.hpp"
+
 #include "EntityFuncs.hpp"
+#include <cstring>
 
 #include "Module.hpp"
 
@@ -20,6 +23,8 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 
     EntityPhysics &po = physics->entityPhysics[e];
     EntityType type = (EntityType) args["type"];
+
+    assert(!po.created);
 
     float mass = 1;
     btVector3 inertia;
@@ -44,11 +49,16 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 
     po.shape->calculateLocalInertia(mass, inertia);
     po.body = new btRigidBody(mass, po.motionState, po.shape, inertia);
+    po.created = true;
+	physics->physicsWorld->addRigidBody(po.body);
 }
 
 void EntityFuncs::onEntityDestroy(int e)
 {
     EntityPhysics &po = physics->entityPhysics[e];
+    assert(po.created);
+
+	physics->physicsWorld->removeRigidBody(po.body);
 
     delete po.motionState;
     delete po.body;
@@ -58,6 +68,7 @@ void EntityFuncs::onEntityDestroy(int e)
     po.shape = 0;
     po.body = 0;
     po.motionState = 0;
+    po.created = false;
 }
 
 void EntityFuncs::onEntityUpdate(int e, Time time)

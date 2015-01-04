@@ -9,7 +9,7 @@ namespace blocks
 class GraphicsCallback
 {
 public:
-    virtual void setWindowSize(int w, int h) = 0;
+    virtual void setWindowSize(int w, int h) {};
     virtual bool buildChunk(ivec3_c &c) {return false;};
 };
 

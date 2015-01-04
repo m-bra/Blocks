@@ -1,10 +1,11 @@
-#ifndef LENTITYFUNCS_HPP_INCLUDED
-#define LENTITYFUNCS_HPP_INCLUDED
+#ifndef LOGIC_ENTITYFUNCS_HPP_INCLUDED
+#define LOGIC_ENTITYFUNCS_HPP_INCLUDED
 
-#include <sstream>
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
+
 #include "../vec.hpp"
-
-#include "../World.hpp"
 #include "Types.hpp"
 #include "../Registerable.hpp"
 
@@ -16,27 +17,20 @@ namespace physics {class Module;};
 namespace logic
 {
 
-class EntityFuncs : public EntityListener, public WorldListener
+class EntityFuncs : public EntityListener, public WorldListener, public Registerable
 {
 private:
 	class Module *logic;
 
 	physics::Module *physics;
-	World *world;
+	class World *world;
 public:
-	EntityFuncs(Module *a_module) : logic(a_module) {}
-
 	void onWorldCreate(World *world);
-
-	void onWorldDestroy() {}
-	void onWorldUpdate(Time time) {}
 
 	void onEntityCreate(int e, EntityArgs ls);
 	void onEntityUpdate(int e, Time time);
 	void onEntityDrop(int e);
 	void onEntityTake(int e);
-	void onEntityDestroy(int e) {}
-	void onEntityArrayResize(int newsize) {}
 };
 
 }  // namespace logic

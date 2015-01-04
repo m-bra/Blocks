@@ -10,10 +10,10 @@ namespace blocks
 class EntityListener
 {
 public:
-    virtual void onEntityCreate(int e, EntityArgs args) = 0;
-    virtual void onEntityDestroy(int e) = 0;
-    virtual void onEntityUpdate(int e, Time time) = 0;
-    virtual void onEntityArrayResize(int newsize) = 0;
+    virtual void onEntityCreate(int e, EntityArgs args) {};
+    virtual void onEntityDestroy(int e) {};
+    virtual void onEntityUpdate(int e, Time time) {};
+    virtual void onEntityArrayResize(int newsize) {};
 };
 
 }

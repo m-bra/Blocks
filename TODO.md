@@ -11,6 +11,7 @@
    - some .hpp -> .cpp (faster compilation, better dependency-resolving)
    - Rename "Shared" to "World". those days are gone.
  * Add gui, text, hud (-> +crosshair)
+ * Rename (rethinking, that is) "Registerable" to "Module"
 
 ## Small Todos:
  * Kill entities fallen out of the world

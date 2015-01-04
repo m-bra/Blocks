@@ -1,5 +1,16 @@
-#ifndef TYPES_HPP_
-#define TYPES_HPP_
+#ifndef PHYSICS_TYPES_HPP_INCLUDED
+#define PHYSICS_TYPES_HPP_INCLUDED
+
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
+
+#include "../vec.hpp"
+
+class btCollisionShape;
+class btMotionState;
+class btCompoundShape;
+class btRigidBody;
 
 namespace blocks
 {

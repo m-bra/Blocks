@@ -1,5 +1,9 @@
-#ifndef GTYPES_HPP_INCLUDED
-#define GTYPES_HPP_INCLUDED
+#ifndef GRAPHICS_TYPES_HPP_INCLUDED
+#define GRAPHICS_TYPES_HPP_INCLUDED
+
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
 
 #include <GL/glew.h>
 

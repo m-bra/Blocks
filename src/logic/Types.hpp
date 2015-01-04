@@ -1,6 +1,10 @@
 #ifndef LOGIC_TYPES_HPP_INCLUDED
 #define LOGIC_TYPES_HPP_INCLUDED
 
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
+
 #include <cstring>
 #include "../vec.hpp"
 #include "../WorldTypes.hpp"

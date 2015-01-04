@@ -1,5 +1,9 @@
-#ifndef PHYSICSWORLDFIELDS_HPP_
-#define PHYSICSWORLDFIELDS_HPP_
+#ifndef PHYSICS_PHYSICS_HPP_INCLUDED
+#define PHYSICS_PHYSICS_HPP_INCLUDED
+
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning This header assumes "precompiled.hpp" to be #included
+#endif
 
 #include <mutex>
 
@@ -52,18 +56,19 @@ public:
 	void onWorldCreate(World *world);
 	void onWorldDestroy();
 	void onWorldUpdate(Time time);
-	WorldListener *getWorldListener() {return this;}
 
-	void onEntityCreate(int e, EntityArgs args);
-	void onEntityDestroy(int e);
-	void onEntityUpdate(int e, Time time) {}
-	void onEntityArrayResize(int newSize);
-	EntityListener *getEntityListener() {return this;}
+	void onEntityArrayResize(int newSize)
+	{
+		entityPhysics.resize(newSize);
+	}
 
 	bool doneLoading();
-	LoadCallback *getLoadCallback() {return this;}
 
-	ParallelCallback *getParallelCallback() {return this;}
+	void getSubRegisterables(std::vector<Registerable *> &subs)
+	{
+		subs.push_back(&entityFuncs);
+		subs.push_back(&blockFuncs);
+	}
 
 	bool getSelectedBlock(fvec3_c &from, fvec3_c &to, ivec3 &b1, ivec3 &b2);
 	int getSelectedEntity(fvec3_c &from, fvec3_c &to);
@@ -74,7 +79,6 @@ public:
 	bool canMove() {return !shapeBuf;}
 	void move(ivec3_c &m);
 	void onChunkChange(ivec3_c &c) {chunkPhysics[c].dirty = true;}
-	ChunkListener *getChunkListener() {return this;}
 
 	void setEntityPos(int e, fvec3_c &pos)
 	{

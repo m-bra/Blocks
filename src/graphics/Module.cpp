@@ -1,4 +1,13 @@
+#include "precompiled.hpp"
+
 #include "Module.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/vector_angle.hpp>
+
+#include "../CImg.h"
+using namespace cimg_library;
 
 namespace blocks
 {
@@ -55,9 +64,6 @@ void Module::onWorldCreate(World *a_world)
 	chunkTransforms.create(world->count);
 	chunkGraphics.create(world->count);
 
-	blockFuncs.onWorldCreate(world);
-	entityFuncs.setBlockFuncs(&blockFuncs);
-	entityFuncs.onWorldCreate(world);
 	vertexBufFlushed = true;
 
 	// shader
@@ -178,17 +184,12 @@ void Module::onEntityCreate(int e, EntityArgs args)
 	2, openGLType, GL_FALSE, sizeof (Vertex), (void*)(3 * sizeof (VertexComponent)));
 	glVertexAttribPointer(attributes.vertNormalXYZ,
 	3, openGLType, GL_FALSE, sizeof (Vertex), (void*)(5 * sizeof (VertexComponent)));
-
-	entityFuncs.onEntityCreate(e, args);
-	eg.vertCount = entityFuncs.putVertices(eg.vbo, e);
 }
 
 void Module::onEntityDestroy(int e)
 {
 	EntityGraphics &eg = entityGraphics[e];
 	assert(eg.created);
-
-	entityFuncs.onEntityDestroy(e);
 
 	eg.created = false;
 	glDeleteBuffers(1, &eg.vbo);
