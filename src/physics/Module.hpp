@@ -82,10 +82,7 @@ public:
 
 	void setEntityPos(int e, fvec3_c &pos)
 	{
-		btTransform t;
-		entityPhysics[e].body->getMotionState()->getWorldTransform(t);
-		t.setOrigin(pos.bt());
-		entityPhysics[e].body->getMotionState()->setWorldTransform(t);
+		entityPhysics[e].body->getWorldTransform().setOrigin(pos.bt());
 	}
 
 	fvec3 getEntityPos(int e)
@@ -97,6 +94,9 @@ public:
 	{
 		return entityPhysics[e].body->getWorldTransform().getOpenGLMatrix(matrix);
 	}
+
+	void addEntityForce(int e, fvec3_c &f) {entityPhysics[e].force+= f;}
+    void setEntityForce(int e, fvec3_c &f) {entityPhysics[e].force = f;}
 };
 
 }

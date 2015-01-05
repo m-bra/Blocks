@@ -17,6 +17,9 @@ namespace blocks
 
 class World
 {
+private:
+	void destroyEntity(int e);
+
 public:
 	// chunk size and count
 	ivec3_c count{8, 2, 8}, size{16, 32, 16};
@@ -45,6 +48,7 @@ public:
 
 	EntityFieldArray<EntityType> entityTypes;
 	EntityFieldArray<fvec3> entityEyePos;
+	EntityFieldArray<bool> entityDead;
 
 	BlockFieldArray<BlockType> blockTypes;
 
@@ -110,7 +114,7 @@ public:
 	bool onGround();
 
 	int createEntity(EntityArgs args);
-	void destroyEntity(int e);
+	void killEntity(int e) {entityDead[e] = true;}
 
 	void setEntityPos(int e, fvec3_c &pos)
 	{

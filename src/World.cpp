@@ -65,8 +65,8 @@ World::World(Registerable **p_registerables, int registerables_count)
 World::~World()
 {
 	destroyEntity(playerEntity);
-	for (WorldListener *wl : worldListeners)
-		wl->onWorldDestroy();
+	for (auto it = worldListeners.rbegin(); it != worldListeners.rend(); ++it)
+		(*it)->onWorldDestroy();
 }
 
 void World::tryMove(ivec3_c &m)
@@ -94,20 +94,20 @@ void World::resetPlayer()
 	int bx = count.x * size.x / 2;
 	int bz = count.z * size.z / 2;
 	for (int i = 0; i < 50; ++i)
-		{
-			for (int by = count.y * size.y-2; by >= 1; --by)
-				if (blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
-					&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
-					&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
-					{
-						setEntityPos(playerEntity, btVector3(bx+.5, by+playerHeight/2, bz+.5));
-						return;
-					}
-					bx = rand() % count.x * size.x;
-					bz = rand() % count.z * size.z;
-				}
-				std::cerr << "ERROR: Cannot reset player.\n";
+	{
+		for (int by = count.y * size.y-2; by >= 1; --by)
+			if (blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
+				&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
+				&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
+			{
+				setEntityPos(playerEntity, btVector3(bx+.5, by+playerHeight/2, bz+.5));
+				return;
 			}
+		bx = rand() % count.x * size.x;
+		bz = rand() % count.z * size.z;
+	}
+	LOG_ERR("Cannot reset player, no free ground found.");
+}
 
 void World::resizeEntityArrays()
 {
@@ -116,6 +116,8 @@ void World::resizeEntityArrays()
 
 	entityTypes.resize(newSize);
 	entityEyePos.resize(newSize);
+	entityDead.resize(newSize, false);
+
 	for (EntityListener *el : entityListeners)
 		el->onEntityArrayResize(newSize);
 }
@@ -132,10 +134,14 @@ void World::update(Time time)
 	for (WorldListener *wl : worldListeners)
 		wl->onWorldUpdate(time);
 
-	for (int e = 0; e < entityTypes.getCount(); ++e)
-		if (entityTypes[e] != EntityType::NONE)
-			for (EntityListener *el : entityListeners)
+	for (EntityListener *el : entityListeners)
+		for (int e = 0; e < entityTypes.getCount(); ++e)
+			if (entityTypes[e] != EntityType::NONE)
 				el->onEntityUpdate(e, time);
+
+	for (int e = 0; e < entityTypes.getCount(); ++e)
+		if (entityDead[e])
+			destroyEntity(e);
 
 	if (loading)
 	{
@@ -247,15 +253,16 @@ int World::createEntity(EntityArgs args)
 		resizeEntityArrays();
 		entityTypes.iterate(tryCreate);
 		if (createdEnt == -1)
-			Log::fatalError("Couldn't create entity for unknown reason... (maybe corruption / out of memory)\n");
+			LOG_FATAL("Couldn't create entity ", createdEnt, " for unknown reason... (maybe corruption / out of memory)\n");
 	}
 	return createdEnt;
 }
 
 void World::destroyEntity(int e)
 {
+	for (auto it = entityListeners.rbegin(); it != entityListeners.rend(); ++it)
+		(*it)->onEntityDestroy(e);
 	entityTypes[e] = EntityType::NONE;
-	for (EntityListener *el : entityListeners)
-		el->onEntityDestroy(e);
 }
+
 }

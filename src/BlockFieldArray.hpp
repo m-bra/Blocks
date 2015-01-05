@@ -15,12 +15,12 @@ class BlockFieldArray
 
 	inline long getChunkIndex(ivec3_c &c)
 	{
-		return c.z * count.y * count.x + c.y * count.x + c.z;
+		return c.z * count.y * count.x + c.y * count.x + c.x;
 	}
 
 	inline long getBlockIndex(ivec3_c &b)
 	{
-		return b.z * size.y * size.x + b.y * size.x + b.z;
+		return b.z * size.y * size.x + b.y * size.x + b.x;
 	}
 public:
 

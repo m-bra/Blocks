@@ -53,7 +53,7 @@ void Module::checkGLError(std::string msg)
 {
 	gll::onOpenGLErr([&] (GLenum err, GLubyte const *errstr)
 	{
-		Log::error("OpenGL error (" + msg + "): " + std::string((char const *)errstr));
+		LOG_ERR("OpenGL error (", msg, "): ", errstr);
 		exit(EXIT_FAILURE);
 	});
 }
@@ -117,7 +117,7 @@ void Module::onWorldCreate(World *a_world)
 				pixels[y * chunkImg.width() * 4 + x * 4 + 3] = 255;
 			}
 	else
-		Log::fatalError("Cannot load chunk.png: 3 or 4 channels required");
+		LOG_FATAL("Cannot load chunk.png: 3 or 4 channels required, have ", chunkImg.spectrum());
 
 	// push texture to gpu
 	glGenTextures(1, &chunkTbo);
@@ -475,12 +475,8 @@ bool Module::buildChunk(ivec3_c &c)
 
 	if (currChunkVertex != chunkVertexCount)
 	{
-		std::stringstream ss;
-		ss << "Asynchronous measurement and acquirement of chunk vertices!\n"
-		   << "Measured " << chunkVertexCount
-		   << ", acquired " << currChunkVertex << " vertices.";
-		Log::error(ss);
-		exit(EXIT_FAILURE);
+		LOG_ERR("============\nAsynchronous measurement and acquirement of chunk vertices!\n",
+		        "Measured ", chunkVertexCount, ", acquired ", currChunkVertex, " vertices.\nTHIS IS A STACKOVERFLOW!\n============");
 	}
 	return true;
 }

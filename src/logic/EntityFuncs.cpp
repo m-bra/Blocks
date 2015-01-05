@@ -11,13 +11,17 @@ namespace blocks
 namespace logic
 {
 
-void EntityFuncs::onWorldCreate(World *a_world)
+void EntityFuncs::onRegister(World *world)
 {
-    world = a_world;
     physics = world->getFirstRegisterableByType<physics::Module>();
     assert(physics);
     logic = world->getFirstRegisterableByType<Module>();
     assert(logic);
+}
+
+void EntityFuncs::onWorldCreate(World *a_world)
+{
+    world = a_world;
 }
 
 void EntityFuncs::onEntityCreate(int e, EntityArgs ls)
@@ -42,6 +46,7 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
 
     switch (type)
     {
+    case EntityType::PLAYER:
     case EntityType::NONE:
         break;
     case EntityType::BLOCK:
@@ -88,7 +93,7 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
             if (data.fixTime < 0)
             {
                 world->setBlockType((ivec3) pos, logic->entityLogics[e].blockEntity.blockType);
-                world->destroyEntity(e);
+                world->killEntity(e);
                 world->graphics[0]->buildChunk(ivec3(pos) / world->size);
             }
         }
@@ -120,7 +125,7 @@ void EntityFuncs::onEntityUpdate(int e, Time time)
     }
         break;
     default:
-        std::cerr << "Trying to update entity (type = " << (int) type << ")\n";
+        LOG_ERR("Trying to update entity (type = ", (int) type, ")\n");
     }
 }
 

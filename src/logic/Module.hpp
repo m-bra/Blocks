@@ -56,6 +56,7 @@ public:
 
 	bool doneLoading();
 
+	void onRegister(World *world);
 	void getSubRegisterables(std::vector<Registerable *> &subs)
 	{
 		subs.push_back(&entityFuncs);
@@ -71,7 +72,6 @@ public:
 
 	void setWalk(fvec3_c &moveSpeeds);
 	void jump();
-	void resetPlayer();
 
 	void use();
 	void place();

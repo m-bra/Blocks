@@ -18,6 +18,11 @@ namespace blocks
 namespace logic
 {
 
+void Module::onRegister(World *world)
+{
+    physics = world->getFirstRegisterableByType<physics::Module>();
+}
+
 void Module::onWorldCreate(World *a_world)
 {
     world = a_world;
@@ -28,8 +33,6 @@ void Module::onWorldCreate(World *a_world)
     world->camUp = fvec3::Y;
 
     chunkGenerateFlags.fill(true);
-
-    physics = world->getFirstRegisterableByType<physics::Module>();
 }
 
 void Module::onWorldDestroy()
@@ -89,9 +92,9 @@ void Module::generate(ivec3_c &c)
 void Module::setWalk(fvec3_c &moveSpeeds)
 {
     glm::vec3 removeY(1, 0, 1);
-    physics->entityPhysics[world->playerEntity].force =
+    world->physics[0]->setEntityForce(world->playerEntity,
         (world->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
-       +(world->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15;
+        +(world->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
 }
 
 
@@ -159,28 +162,6 @@ void Module::move(ivec3_c &m)
     , [](ivec3_c &){});
 }
 
-
-void Module::resetPlayer()
-{
-    fvec3 playerPos = world->getEntityPos(world->playerEntity);
-    int bx = world->count.x * world->size.x / 2;
-    int bz = world->count.z * world->size.z / 2;
-    for (int i = 0; i < 50; ++i)
-    {
-        for (int by = world->count.y * world->size.y - 2; by >= 1; --by)
-            if (world->blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
-                && world->blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
-                && world->blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
-            {
-                world->setEntityPos(world->playerEntity, btVector3(bx+.5, by+world->playerHeight/2, bz+.5));
-                return;
-            }
-        bx = rand() % world->count.x * world->size.x;
-        bz = rand() % world->size.z * world->size.z;
-    }
-    std::cerr << "ERROR: Cannot reset player.\n";
-}
-
 void Module::jump()
 {
     // sometimes doesnt jump although on ground
@@ -200,7 +181,7 @@ void Module::take()
     // if selected block
     ivec3 b1, b2;
     fvec3 from, to;
-    from = physics->getEntityPos(world->playerEntity);
+    from = world->getEntityPos(world->playerEntity);
     to = from + world->camDir * 10;
     bool const isSelectingBlock = physics->getSelectedBlock(from, to, b1, b2);
     bool const isBlockValid = world->blockTypes.isValidBlockCoord(b1);
@@ -211,7 +192,7 @@ void Module::take()
     int &heldEntity = entityLogics[world->playerEntity].player.heldEntity;
     if (heldEntity != -1)
     {
-        btRigidBody *body = physics->entityPhysics[heldEntity].body;
+        btRigidBody *const body = physics->entityPhysics[heldEntity].body;
         body->applyCentralImpulse(world->camDir.bt() * 10 / body->getInvMass());
         entityFuncs.onEntityDrop(heldEntity);
         heldEntity = -1;
@@ -221,7 +202,8 @@ void Module::take()
         if (isSelectingBlock && isBlockValid)
         {
             if (selectedEntity != -1)
-                std::cerr << "Did select entity AND block simultaneously!\n";
+                LOG_ERR("Selected entity AND block simultaneously"
+                    "(none of getSelectedBlock(...) and getSelectedEntity(...) failed)");
 
             fvec3 pos = b1 + fvec3(.5, .5, .5);
             heldEntity = world->createEntity({{"type", (intptr_t) EntityType::BLOCK}, {"pos", (intptr_t)&pos}});

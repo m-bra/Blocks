@@ -21,36 +21,42 @@ void EntityFuncs::onRegister(World *world)
     assert(blockFuncs);
 }
 
+int uploadAACubeToVbo(float tx0, float tx1, float ty0, float ty1);
+
 void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 {
     EntityType const &type = world->entityTypes[e];
     logic::EntityLogics &data = logic->entityLogics[e];
     EntityGraphics &eGraphics = graphics->entityGraphics[e];
 
+    eGraphics.vertCount = 0;
     eGraphics.tbo = graphics->chunkTbo;
+    glBindBuffer(GL_ARRAY_BUFFER, eGraphics.vbo);
 
     BlockType texType;
     switch (type)
     {
+    case EntityType::PLAYER:
+        break;
     case EntityType::BLOCK:
+    {
         texType = data.blockEntity.blockType;
-        break;
-    case EntityType::BOT:
-        texType = BlockType::COMPANION;
-        break;
-    default:
-        std::stringstream ss;
-        ss << "Trying to get vertices of entity which does not have any (type = " << (int) type << ")";
-        Log::error(ss);
+        auto t = blockFuncs->getBlockTypeTexCoords(texType);
+        eGraphics.vertCount = uploadAACubeToVbo(t.first.x, t.first.x + t.second.x, t.first.y, t.first.y + t.second.y);
         break;
     }
-    auto t = blockFuncs->getBlockTypeTexCoords(texType);
+    default:
+        LOG_ERR("Cannot construct mesh for unknown entity type ", (int) type);
+        break;
+    }
 
-    float tx0 = t.first.x;
-    float tx1 = t.first.x + t.second.x;
-    float ty0 = t.first.y;
-    float ty1 = t.first.y + t.second.y;
-    float cube_verts[] = {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+// call glBufferData on currently bound vbo with the vertices of an axis-aligned cube
+int uploadAACubeToVbo(float tx0, float tx1, float ty0, float ty1)
+{
+    float const cube_verts[] = {
         // left
         -.5, -.5, -.5,  tx0, ty0,  -1, 0, 0,
         -.5, +.5, +.5,  tx1, ty1,  -1, 0, 0,
@@ -99,9 +105,8 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
         +.5, +.5, +.5,  tx1, ty1,  0, 0, +1,
         -.5, +.5, +.5,  tx0, ty1,  0, 0, +1,
     };
-    glBindBuffer(GL_ARRAY_BUFFER, eGraphics.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof (cube_verts), cube_verts, GL_STATIC_DRAW);
-    eGraphics.vertCount = sizeof (cube_verts) / sizeof (float);
+    return sizeof (cube_verts) / sizeof (float);
 }
 
 }

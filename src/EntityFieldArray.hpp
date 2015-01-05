@@ -14,9 +14,9 @@ private:
 	std::vector<Field> array;
 public:
 
-	void resize(int newSize)
+	void resize(int newSize, Field f = Field())
 	{
-		array.resize(newSize);
+		array.resize(newSize, f);
 	}
 
 	bool isValidEntity(int e) const
@@ -73,9 +73,9 @@ private:
 	std::vector<int> array;
 public:
 
-	void resize(int newSize)
+	void resize(int newSize, bool b = bool())
 	{
-		array.resize(newSize);
+		array.resize(newSize, b);
 	}
 
 	bool isValidEntity(int e) const

@@ -11,7 +11,7 @@ AppFuncs *appfuncs;
 
 void handleGlfwErr(int error, const char *description)
 {
-    Log::error(description);
+    LOG_ERR("GLFW error ", error, ": ", description);
 }
 
 void handleGlfwKey(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -36,15 +36,16 @@ void handleGlfwScroll(GLFWwindow *window, double x, double y)
 
 void handleGlfwFrameBuf(GLFWwindow *window, int x, int y)
 {
-    Log::debug("handleGlfwFrameBuf() called.");
     appfuncs->frameBufEvent(x, y);
 }
 
 int main()
 {
+    Log::setThisThreadName("Main");
+
     glfwSetErrorCallback(handleGlfwErr);
     if (!glfwInit())
-        Log::fatalError("glfwInit failed.");
+        LOG_FATAL("glfwInit() failed.");
     atexit(glfwTerminate);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -68,7 +69,7 @@ int main()
     }
     GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", fullscreen ? glfwGetPrimaryMonitor() : 0, 0);
     if (!window)
-        Log::fatalError("glfwCreateWindow failed.");
+        LOG_FATAL("glfwCreateWindow(...) failed.");
     glfwSetKeyCallback(window, handleGlfwKey);
     glfwSetMouseButtonCallback(window, handleGlfwClick);
     glfwSetCursorPosCallback(window, handleGlfwMouseMove);
@@ -76,7 +77,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, handleGlfwFrameBuf);
     glfwMakeContextCurrent(window);
 
-    Log::log((char const*) glGetString(GL_VERSION));
+    LOG_MSG("OpenGL Version: ", (char const*) glGetString(GL_VERSION));
 
     appfuncs = new AppFuncs(window);
     appfuncs->frameBufEvent(windowWidth, windowHeight);

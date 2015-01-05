@@ -30,9 +30,7 @@ void BlockFuncs::addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkSha
         break;
     default:
     {
-        std::stringstream ss;
-        ss << "Trying to get shape of block which does not have one (blockType = " << (int) type << ")";
-        Log::error(ss);
+        LOG_ERR("Trying to get shape of block which does not have one (blockType = ", (int) type, ")");
     }
     }
 }

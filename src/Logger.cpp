@@ -2,121 +2,86 @@
 
 #include "Logger.hpp"
 
+#if LOG_THREAD
+#include <thread>
+#include <mutex>
+#include <algorithm>
+#endif
+
 namespace Log
 {
 
-void _log(std::string const &msg, LogType logType)
+
+#if LOG_THREAD
+std::map<std::thread::id, std::string> threadIds;
+
+void setThisThreadName(std::string const &name)
 {
-#ifdef LOG_THREAD
+	// um yes, this function's gotta be thread safe!
+	static std::mutex threadIds_mutex;
+	std::lock_guard<std::mutex> lockGuard(threadIds_mutex);
+
+	threadIds[std::this_thread::get_id()] = name;
+}
+#endif
+
+namespace detail {
+
+void _log_str(LogType logType, std::string const &func, std::string const &file, int line, std::string const &msg)
+{
+	// return if debug not wished
+#ifdef LOG_NO_DEBUG
+	if (logType == DEBUG)
+		return;
+#endif
+
+	// print nice stuff
+	std::cout << ">>>> ";
+
+	// print location
+	std::cout << func;// << ", " << file << ":" << line;
+
+	// print thread
+#if LOG_THREAD
 	static std::mutex log_mutex;
 	std::lock_guard<std::mutex> lockGuard(log_mutex);
 
-	std::cout << "Thread " << std::this_thread::get_id() << ": ";
+	std::cout << ", " << "Thread ";
+
+	auto thisThreadId = threadIds.find(std::this_thread::get_id());
+
+	if (thisThreadId == threadIds.end())
+		std::cout << std::hex << std::uppercase << std::this_thread::get_id() << std::nouppercase << std::dec;
+	else
+		std::cout << '"' << (*thisThreadId).second << '"';
 #endif
+
+	std::cout << "\n";
 
 	switch (logType)
 	{
-	case ERROR:
-		std::cout << "ERROR";
+	case ERR:
+		std::cout << "ERROR: ";
+		break;
+	case FATAL_ERR:
+		std::cout << "FATAL ERROR: ";
 		break;
 	case WARNING:
-		std::cout << "WARNING";
+		std::cout << "WARNING: ";
 		break;
 	case DEBUG:
-		std::cout << "DEBUG";
+		std::cout << "DEBUG: ";
 		break;
-	case MESSAGE:
-		std::cout << "MSG";
+	case MSG:
+		std::cout << "MSG: ";
 	}
-	std::cout << ": " << msg << "\n";
+	std::cout << msg << "\n";
+
+	// print nice stuff
+	std::cout << "\n\n";
+
+	if (logType == FATAL_ERR)
+		exit(EXIT_FAILURE);
 }
 
-void log(std::string const &msg)
-{
-	_log(msg, MESSAGE);
-}
-
-void log(std::stringstream &ss)
-{
-	std::string s; ss >> s;
-	log(s);
-}
-
-void log(char const *msg)
-{
-	std::string s(msg);
-	log(s);
-}
-
-void error(std::string const &msg)
-{
-	_log(msg, ERROR);
-}
-
-void error(std::stringstream &ss)
-{
-	std::string s; ss >> s;
-	error(s);
-}
-
-void error(char const *msg)
-{
-	std::string s(msg);
-	error(s);
-}
-
-void fatalError(std::string const &msg)
-{
-	_log(msg, ERROR);
-	exit(EXIT_FAILURE);
-}
-
-void fatalError(std::stringstream &ss)
-{
-	std::string s; ss >> s;
-	fatalError(s);
-}
-
-void fatalError(char const *msg)
-{
-	std::string s(msg);
-	fatalError(s);
-}
-
-void warning(std::string const &msg)
-{
-	_log(msg, WARNING);
-}
-
-void warning(std::stringstream &ss)
-{
-	std::string s; ss >> s;
-	warning(s);
-}
-
-void warning(char const *msg)
-{
-	std::string s(msg);
-	warning(s);
-}
-
-void debug(std::string const &msg)
-{
-#ifndef LOG_NO_DEBUG
-	_log(msg, DEBUG);
-#endif
-}
-
-void debug(char const *msg)
-{
-	std::string s(msg);
-	debug(s);
-}
-
-void debug(std::stringstream &ss)
-{
-	std::string s; ss >> s;
-	debug(s);
-}
-
-}
+} }

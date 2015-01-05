@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # only on my machine! :)
 if (IS_DIRECTORY /home/mbra)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -ggdb")
     message("Enabling debugging! Might not work everywhere! To turn off, remove this!")
 endif ()
 

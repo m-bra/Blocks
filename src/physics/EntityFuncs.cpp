@@ -11,10 +11,14 @@ namespace blocks
 namespace physics
 {
 
+void EntityFuncs::onRegister(World *world)
+{
+    physics = world->getFirstRegisterableByType<physics::Module>();
+}
+
 void EntityFuncs::onWorldCreate(World *world)
 {
     this->world = world;
-    physics = world->getFirstRegisterableByType<physics::Module>();
 }
 
 void EntityFuncs::onEntityCreate(int e, EntityArgs args)
@@ -40,7 +44,7 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
         po.shape = new btCapsuleShape(.2, world->playerHeight - .4);
         break;
     default:
-        Log::error("Physics: Trying to create not supported entity");
+        LOG_ERR("Physics: Trying to create not supported entity ", e);
     }
 
 
@@ -73,8 +77,8 @@ void EntityFuncs::onEntityDestroy(int e)
 
 void EntityFuncs::onEntityUpdate(int e, Time time)
 {
-    EntityType type = world->entityTypes[e];
-    EntityPhysics ephysics = physics->entityPhysics[e];
+    EntityType const type = world->entityTypes[e];
+    EntityPhysics &ephysics = physics->entityPhysics[e];
 
     ephysics.body->applyCentralForce(ephysics.force.bt());
 

@@ -26,6 +26,8 @@ class EntityFuncs : public EntityListener, public WorldListener, public Register
 public:
 	EntityFuncs() : blockShape(btVector3(.5, .5, .5)) {};
 
+	void onRegister(World *world);
+
 	void onWorldCreate(World *world);
 	void onWorldDestroy() {}
 	void onWorldUpdate(Time time) {}

@@ -25,6 +25,7 @@ private:
 	physics::Module *physics;
 	class World *world;
 public:
+	void onRegister(World *world);
 	void onWorldCreate(World *world);
 
 	void onEntityCreate(int e, EntityArgs ls);

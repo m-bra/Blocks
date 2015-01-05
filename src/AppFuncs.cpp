@@ -31,6 +31,8 @@ AppFuncs::~AppFuncs()
 
 void AppFuncs::parallel()
 {
+    Log::setThisThreadName("Parallel");
+
     double lastTime;
     while (_running)
     {
@@ -59,7 +61,7 @@ void AppFuncs::keyEvent(int key, int action, int mods)
             break;
         }
         case GLFW_KEY_ENTER:
-            logicModule->resetPlayer();
+            world->resetPlayer();
             break;
         case GLFW_KEY_SPACE:
             logicModule->jump();
