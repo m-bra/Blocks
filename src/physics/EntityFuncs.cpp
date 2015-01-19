@@ -1,9 +1,9 @@
 #include "precompiled.hpp"
 
-#include "EntityFuncs.hpp"
+#include "physics/EntityFuncs.hpp"
 #include <cstring>
 
-#include "Module.hpp"
+#include "physics/BulletPhysics.hpp"
 
 namespace blocks
 {
@@ -11,17 +11,12 @@ namespace blocks
 namespace physics
 {
 
-void EntityFuncs::onRegister(World *world)
+void EntityFuncs::onRegister()
 {
-    physics = world->getFirstRegisterableByType<physics::Module>();
+    physics = dynamic_cast<BulletPhysics *>(parent);
 }
 
-void EntityFuncs::onWorldCreate(World *world)
-{
-    this->world = world;
-}
-
-void EntityFuncs::onEntityCreate(int e, EntityArgs args)
+void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
 {
     assert(args.find("type") != args.end());
 
@@ -33,19 +28,18 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
     float mass = 1;
     btVector3 inertia;
 
-    switch (type)
+    if (type == world->entityType.block)
     {
-    case EntityType::BLOCK:
         po.shape = &blockShape;
         mass = .1;
-        break;
-    case EntityType::PLAYER:
+    }
+    else if (type == world->entityType.player)
+    {
         mass = 50;
         po.shape = new btCapsuleShape(.2, world->playerHeight - .4);
-        break;
-    default:
-        LOG_ERR("Physics: Trying to create not supported entity ", e);
     }
+    else
+        LOG_ERR("Physics: Trying to create not supported entity ", e);
 
 
     btVector3 pos = reinterpret_cast<fvec3_c *>(args["pos"])->bt();
@@ -57,7 +51,7 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
 	physics->physicsWorld->addRigidBody(po.body);
 }
 
-void EntityFuncs::onEntityDestroy(int e)
+void EntityFuncs::onEntityDestroy(Entity e)
 {
     EntityPhysics &po = physics->entityPhysics[e];
     assert(po.created);
@@ -75,22 +69,18 @@ void EntityFuncs::onEntityDestroy(int e)
     po.created = false;
 }
 
-void EntityFuncs::onEntityUpdate(int e, Time time)
+void EntityFuncs::onUpdate(GameTime time)
 {
-    EntityType const type = world->entityTypes[e];
-    EntityPhysics &ephysics = physics->entityPhysics[e];
-
-    ephysics.body->applyCentralForce(ephysics.force.bt());
-
-    switch (type)
+    world->entityTypes.iterate([&](Entity e, EntityType const &type)
     {
-    case EntityType::PLAYER:
-        ephysics.body->activate();
-        ephysics.body->setAngularFactor(btVector3(0, 1, 0));
-        break;
-    default:
-        break;
-    }
+        EntityPhysics &ephysics = physics->entityPhysics[e];
+
+        if (type == world->entityType.player)
+        {
+            ephysics.body->activate();
+            ephysics.body->setAngularFactor(btVector3(0, 1, 0));
+        }
+    });
 }
 
 }

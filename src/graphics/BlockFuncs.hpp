@@ -3,11 +3,11 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
 
 #include <glm/glm.hpp>
-#include "../vec.hpp"
-#include "../Registerable.hpp"
+#include "Module.hpp"
 
 namespace blocks
 {
@@ -15,13 +15,9 @@ namespace blocks
 namespace graphics
 {
 
-class BlockFuncs : public WorldListener, public Registerable
+class BlockFuncs : public Module
 {
-private:
-	World *world;
 public:
-	void onWorldCreate(World *a_world) {world = a_world;}
-
 	bool isBlockVisible(ivec3 const &b);
 	std::pair<glm::vec2, glm::vec2> getBlockTypeTexCoords(BlockType type);
 	std::pair<glm::vec2, glm::vec2> getBlockTexCoords(ivec3 const &b);

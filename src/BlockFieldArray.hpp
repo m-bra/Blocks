@@ -1,8 +1,10 @@
 #ifndef BLOCK_FIELD_ARRAY_HPP_INCLUDED
 #define BLOCK_FIELD_ARRAY_HPP_INCLUDED
 
-#include <cassert>
-#include "vec.hpp"
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning #include "precompiled.hpp" at the beginning of the TU!
+#include "precompiled.hpp"
+#endif
 
 namespace blocks
 {

@@ -1,8 +1,12 @@
 #ifndef ENTITYFIELDARRAY_HPP_INCLUDED
 #define ENTITYFIELDARRAY_HPP_INCLUDED
 
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning #include "precompiled.hpp" at the beginning of the TU!
+#include "precompiled.hpp"
+#endif
+
 #include <vector>
-#include <cassert>
 
 namespace blocks
 {
@@ -37,7 +41,21 @@ public:
 	}
 
 	template <typename F>
-	bool iterate(F const &func)
+	void iterate(F const &func)
+	{
+		for (int e = 0; e < array.size(); ++e)
+			func(e, operator [](e));
+	}
+
+	template <typename F>
+	void iterate(F const &func) const
+	{
+		for (int e = 0; e < array.size(); ++e)
+			func(e, operator [](e));
+	}
+
+	template <typename F>
+	bool iterate_cond(F const &func)
 	{
 		for (int e = 0; e < array.size(); ++e)
 			if (!func(e, operator [](e)))
@@ -46,7 +64,7 @@ public:
 	}
 
 	template <typename F>
-	bool iterate(F const &func) const
+	bool iterate_cond(F const &func) const
 	{
 		for (int e = 0; e < array.size(); ++e)
 			if (!func(e, operator [](e)))
@@ -96,7 +114,21 @@ public:
 	}
 
 	template <typename F>
-	bool iterate(F const &func)
+	void iterate(F const &func)
+	{
+		for (int e = 0; e < array.size(); ++e)
+			func(e, operator [](e));
+	}
+
+	template <typename F>
+	void iterate(F const &func) const
+	{
+		for (int e = 0; e < array.size(); ++e)
+			func(e, operator [](e));
+	}
+
+	template <typename F>
+	bool iterate_cond(F const &func)
 	{
 		for (int e = 0; e < array.size(); ++e)
 			if (!func(e, operator [](e)))
@@ -105,7 +137,7 @@ public:
 	}
 
 	template <typename F>
-	bool iterate(F const &func) const
+	bool iterate_cond(F const &func) const
 	{
 		for (int e = 0; e < array.size(); ++e)
 			if (!func(e, operator [](e)))

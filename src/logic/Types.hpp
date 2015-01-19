@@ -3,11 +3,10 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
 
 #include <cstring>
-#include "../vec.hpp"
-#include "../WorldTypes.hpp"
 
 namespace blocks
 {
@@ -33,17 +32,10 @@ struct EntityLogics
 		float nextChange;
 	};
 
-	struct Player
-	{
-		int heldEntity;
-		float holdDistance;
-	};
-
 	union
 	{
 	BlockEntity blockEntity;
 	Bot bot;
-	Player player;
 	};
 
 	EntityLogics()

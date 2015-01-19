@@ -3,35 +3,34 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
 
-#include "../vec.hpp"
-#include "Types.hpp"
-#include "../Registerable.hpp"
+#include "logic/Types.hpp"
+#include "Module.hpp"
 
 namespace blocks
 {
 
-namespace physics {class Module;};
+namespace physics {class BulletPhysics;}
 
 namespace logic
 {
 
-class EntityFuncs : public EntityListener, public WorldListener, public Registerable
+class EntityFuncs : public Module
 {
 private:
-	class Module *logic;
+	class DefaultLogic *logic;
 
-	physics::Module *physics;
-	class World *world;
+	physics::BulletPhysics *physics;
 public:
-	void onRegister(World *world);
-	void onWorldCreate(World *world);
+	void onRegister() override;
+	void onUpdate(GameTime gtime) override;
 
-	void onEntityCreate(int e, EntityArgs ls);
-	void onEntityUpdate(int e, Time time);
-	void onEntityDrop(int e);
-	void onEntityTake(int e);
+	void onEntityCreate(Entity e, EntityArgs ls) override;
+	void onEntityDrop(Entity e, int slot, Entity holder) override;
+	void onEntityTake(Entity e, int slot, Entity holder) override;
+	void onEntityPlace(Entity e, int slot, Entity holder) override;
 };
 
 }  // namespace logic

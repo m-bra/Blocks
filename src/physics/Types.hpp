@@ -3,9 +3,8 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
-
-#include "../vec.hpp"
 
 class btCollisionShape;
 class btMotionState;
@@ -24,7 +23,6 @@ struct EntityPhysics
 	btCollisionShape *shape = 0;
 	btMotionState *motionState = 0;
 	btRigidBody *body = 0;
-	fvec3 force;
 };
 
 struct ChunkPhysics

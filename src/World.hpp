@@ -1,94 +1,95 @@
 #ifndef WORLD_HPP_INCLUDED
 #define WORLD_HPP_INCLUDED
 
+#ifndef PRECOMPILED_HPP_INCLUDED
+#warning #include "precompiled.hpp" at the beginning of the TU!
+#include "precompiled.hpp"
+#endif
+
 #include <mutex>
 
-#include "vec.hpp"
-#include "EntityFieldArray.hpp"
-#include "ChunkFieldArray.hpp"
-#include "BlockFieldArray.hpp"
+#include <map>
 
-#include "WorldTypes.hpp"
-
-#include "Registerable.hpp"
 
 namespace blocks
 {
 
+class Module;
+
+using GameTime = float;
+using EntityArgs = std::map<char const *, intP>;
+using EntityType = unsigned char;
+using BlockType = unsigned char;
+using Entity = int;
+
 class World
 {
-private:
-	void destroyEntity(int e);
-
 public:
-	// chunk size and count
-	ivec3_c count{8, 2, 8}, size{16, 32, 16};
+	float reach = 50;
+	float playerHeight = 2;
+	// chunk count and size
+	ivec3 ccount = ivec3(8, 2, 8);
+	ivec3 csize = ivec3(16, 32, 16);
 
 	std::mutex moveLock;
+	ChunkFieldArray<std::mutex> chunkWriteLocks;
+	ivec3 pos, nextMove;
+
+	int entityTypeCount = 0, blockTypeCount = 0;
+
 	struct
 	{
-		ChunkFieldArray<std::mutex> _mutex;
+		EntityType none, player, block;
+	} entityType;
 
-		void lock(ivec3_c &c)
-		{
-			_mutex[c].lock();
-		}
+	struct
+	{
+		BlockType none, outside, air, ground, ground2, companion;
+	} blockType;
 
-		bool try_lock(ivec3_c &c)
-		{
-			return _mutex[c].try_lock();
-		}
-
-		void unlock(ivec3_c &c)
-		{
-			_mutex[c].unlock();
-		}
-	} blockWriteLock;
-	ivec3 pos, nextMove;
+	// every entity CAN have "hold slots". if an entitytype is not listed in this map,
+	// entities of that type will not have any slots.
+	// a hold slot is essentially an index to an entity, which is holded by the entity which owns the slot.
+	std::map<EntityType, int> entityTypeHoldSlotCount;
 
 	EntityFieldArray<EntityType> entityTypes;
 	EntityFieldArray<fvec3> entityEyePos;
 	EntityFieldArray<bool> entityDead;
+	EntityFieldArray<std::vector<Entity>> entityHoldSlots;
+	EntityFieldArray<std::vector<float>> entityHoldDistances;
 
+	// to set a blocks, you need to consider two things:
+	// 1. call onChunkChange and optionally onBlockChange afterwards
+	//    NOTE that if the block borders on another chunk onChunkChange()'s got to be called there, too!
+	// 2. lock the corresponding chunkWriteLock
+	// OR: use setBlockType() which handles the dirty stuff for ye.
+	// OR: don't care about it and break the game! :) :) :) :) 			(no. please dont.)
 	BlockFieldArray<BlockType> blockTypes;
 
-	std::vector<GraphicsCallback *> graphics;
-	std::vector<PhysicsCallback *> physics;
+	class GraphicsProvider *graphics;
+	class PhysicsProvider *physics;
+	std::vector<Module *> modules;
 
-	std::vector<Registerable *> registerables;
-	std::vector<WorldListener *> worldListeners;
-	std::vector<EntityListener *> entityListeners;
-	std::vector<LoadCallback *> loadCallbacks;
-	std::vector<ChunkListener *> chunkListeners;
-	std::vector<ParallelCallback *> parallelCallbacks;
-
-	Time gameTime;
+	GameTime gameTime;
 	bool loading = true;
-	int playerEntity;
+	int playerEntity = -1;
 
-	//fvec3 camPos;
-	fvec3 camDir, camLeft, camUp;
-
-	// configuration
-	float const reach = 50;
-	float const playerHeight = 2;
-
-	World(Registerable **p_registerables, int registerables_count);
+	World(std::vector<Module *> &a_modules, GraphicsProvider *a_graphics, PhysicsProvider *a_physics);
 	~World();
 
 	template <typename T>
-	T *getFirstRegisterableByType()
+	T *getFirstModuleByType()
 	{
-		for (Registerable *r : registerables)
+		for (Module *r : modules)
 			if (dynamic_cast<T *>(r))
 				return (T *) r;
 		return 0;
 	}
 
 	template <typename T>
-	void getRegisterablesByType(std::vector<T *> &arg)
+	void getModulesByType(std::vector<T *> &arg)
 	{
-		for (Registerable *r : registerables)
+		for (Module *r : modules)
 		{
 			T *asT = dynamic_cast<T *>(r);
 			if (asT)
@@ -96,45 +97,33 @@ public:
 		}
 	}
 
-	void setWindowSize(int x, int y)
-	{
-		for (GraphicsCallback *g : graphics)
-			g->setWindowSize(x, y);
-	}
-
-	Time secondsToWorldTime(float seconds)
-	{
-		return seconds;
-	}
-
-	void setBlockType(ivec3::cref b, BlockType type);
+	void setBlockType(ivec3_c &b, BlockType type);
 	void onBlockChange(ivec3_c &b);
 	void onChunkChange(ivec3_c &c);
 
 	bool onGround();
 
 	int createEntity(EntityArgs args);
-	void killEntity(int e) {entityDead[e] = true;}
+	void killEntity(Entity e) {entityDead[e] = true;}
+	void setEntityPos(Entity e, fvec3_c &pos);
+	fvec3 getEntityPos(Entity e);
 
-	void setEntityPos(int e, fvec3_c &pos)
-	{
-		physics[0]->setEntityPos(e, pos);
-	}
-	fvec3 getEntityPos(int e)
-	{
-		return physics[0]->getEntityPos(e);
-	}
+	int createEntityType();
+	int createBlockType();
 
-	void resetPlayer();
+	void setWalk(int e, fvec3_c &moveSpeeds);
+	void resetPlayer(Entity e);
+	void jump(Entity e);
+	void take(Entity e, int slot);
+	void place(Entity e, int slot);
 
+	void update(GameTime gtime);
+	void parallel(GameTime gtime);
+
+private:
+	void destroyEntity(Entity e);
 	void resizeEntityArrays();
 	void tryMove(ivec3_c &m);
-	void update(Time time);
-	void parallel(Time time)
-	{
-		for (ParallelCallback *p : parallelCallbacks)
-			p->parallel(time);
-	}
 };
 
 }

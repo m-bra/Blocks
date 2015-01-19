@@ -3,11 +3,12 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
 
-#include "../vec.hpp"
-#include "../Registerable.hpp"
-#include "Types.hpp"
+#include "Module.hpp"
+
+#include "physics/Types.hpp"
 
 class btCompoundShape;
 
@@ -17,14 +18,9 @@ namespace blocks
 namespace physics
 {
 
-class BlockFuncs : public WorldListener, public Registerable
+class BlockFuncs : public Module
 {
-private:
-	class World *world;
-	class ThisClassDoesNotExistIHopeButIUseItForTestingWhetherWeCanStillPointToThisClass *lolTest;
 public:
-	void onWorldCreate(World *a_world) {world = a_world;}
-
 	void addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkShape);
 };
 

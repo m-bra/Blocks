@@ -3,42 +3,34 @@
 
 #ifndef PRECOMPILED_HPP_INCLUDED
 #warning This header assumes "precompiled.hpp" to be #included
+#include "precompiled.hpp"
 #endif
 
 #include "btBulletDynamicsCommon.h"
-#include "../vec.hpp"
 
-#include "Types.hpp"
-#include "../Registerable.hpp"
+#include "Module.hpp"
+
 
 namespace blocks
 {
 
-namespace physics {class Module;}
-
 namespace physics
 {
-class EntityFuncs : public EntityListener, public WorldListener, public Registerable
+class EntityFuncs : public Module
 {
 	World *world;
-	physics::Module *physics;
+	class BulletPhysics *physics;
 	btBoxShape blockShape;
 public:
 	EntityFuncs() : blockShape(btVector3(.5, .5, .5)) {};
 
-	void onRegister(World *world);
+	void onRegister() override;
+	void onUpdate(GameTime time)override;
 
-	void onWorldCreate(World *world);
-	void onWorldDestroy() {}
-	void onWorldUpdate(Time time) {}
-
-	void onEntityCreate(int e, EntityArgs args);
-	void onEntityDestroy(int e);
-	void onEntityUpdate(int e, Time time);
-	void onEntityArrayResize(int newsize) {}
+	void onEntityCreate(Entity e, EntityArgs args) override;
+	void onEntityDestroy(Entity e) override;
 };
 }
 }
 
-
-#endif /* ENTITYFUNCS_HPP_ */
+#endif/*PHYSICS_ENTITYFUNCS_HPP_INCLUDED*/

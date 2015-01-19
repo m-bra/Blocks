@@ -1,112 +1,199 @@
 #include "precompiled.hpp"
 
-#include "World.hpp"
+#include "Module.hpp"
 
-#include "Logger.hpp"
+#include "PhysicsProvider.hpp"
+#include "GraphicsProvider.hpp"
+
+#include <functional>
 
 namespace blocks
 {
 
-void pushRegisterableRecursively(std::vector<Registerable *> &registerables, Registerable *r)
+void pushModuleRecursively(std::vector<Module *> &modules, std::vector<Module *> &parents, Module *m, Module *parent = 0)
 {
-	registerables.push_back(r);
+	modules.push_back(m);
+	parents.push_back(parent);
 
-	std::vector<Registerable *> subs;
-	r->getSubRegisterables(subs);
-	for (Registerable *s : subs)
-		pushRegisterableRecursively(registerables, s);
+	std::vector<Module *> subs;
+	m->getSubModules(subs);
+	for (Module *s : subs)
+		pushModuleRecursively(modules, parents, s, m);
 }
 
-World::World(Registerable **p_registerables, int registerables_count)
+World::World(std::vector<Module *> &a_modules, GraphicsProvider *a_graphics, PhysicsProvider *a_physics)
 {
-	blockWriteLock._mutex.create(count);
-	blockTypes.create(count, size);
+	chunkWriteLocks.create(ccount);
+	blockTypes.create(ccount, csize);
 
-	blockTypes.fill(BlockType::NONE);
+	blockTypes.fill(blockType.none);
 
 	pos.z = time(0) % 1000;
 	pos.x = (time(0) % 1000000) / 1000;
 
-	for (int i = 0; i < registerables_count; ++i)
-		pushRegisterableRecursively(registerables, p_registerables[i]);
+	graphics = a_graphics;
+	physics = a_physics;
 
-	for (Registerable *r : registerables)
-	{
-		EntityListener *asEntityListener = dynamic_cast<EntityListener *>(r);
-		WorldListener *asWorldListener = dynamic_cast<WorldListener *>(r);
-		ChunkListener *asChunkListener = dynamic_cast<ChunkListener *>(r);
-		LoadCallback *asLoadCallback = dynamic_cast<LoadCallback *>(r);
-		ParallelCallback *asParallelCallback = dynamic_cast<ParallelCallback *>(r);
+	std::vector<Module *> parents;
 
-		if (asEntityListener) entityListeners.push_back(asEntityListener);
-		if (asWorldListener) worldListeners.push_back(asWorldListener);
-		if (asChunkListener) chunkListeners.push_back(asChunkListener);
-		if (asLoadCallback) loadCallbacks.push_back(asLoadCallback);
-		if (asParallelCallback) parallelCallbacks.push_back(asParallelCallback);
-	}
+	for (auto it = a_modules.begin(); it != a_modules.end(); ++it)
+		pushModuleRecursively(modules, parents, *it);
 
-	for (Registerable *r : registerables)
-		r->onRegister(this);
+	assert(parents.size() == modules.size());
 
-	for (WorldListener *wl : worldListeners)
-		wl->onWorldCreate(this);
+	for (int i = 0; i < modules.size(); ++i)
+		modules[i]->register(this, parents[i]);
 
-	getRegisterablesByType<GraphicsCallback>(graphics);
-	assert(graphics.size() > 0);
+	blockType.none = createBlockType();
+	blockType.outside = createBlockType();
+	blockType.air = createBlockType();
+	blockType.ground = createBlockType();
+	blockType.ground2 = createBlockType();
+	blockType.companion = createBlockType();
 
-	getRegisterablesByType<PhysicsCallback>(physics);
-	assert(physics.size() > 0);
+	entityType.none = createEntityType();
+	entityType.player = createEntityType();
+	entityTypeHoldSlotCount[entityType.player] = 1;
+	entityType.block = createEntityType();
 
-	fvec3 playerPos = count * size / 2;
-	playerPos.y = count.y * size.y;
-	playerEntity = createEntity({{"type", (intptr_t) EntityType::PLAYER}, {"pos", (intptr_t) &playerPos}});
+	fvec3 playerPos = ccount * csize / 2;
+	playerPos.y = ccount.y * csize.y;
+	playerEntity = createEntity({{"type", (intP) entityType.player}});
+	setEntityPos(playerEntity, playerPos);
 }
 
 World::~World()
 {
 	destroyEntity(playerEntity);
-	for (auto it = worldListeners.rbegin(); it != worldListeners.rend(); ++it)
-		(*it)->onWorldDestroy();
+	for (auto it = modules.rbegin(); it != modules.rend(); ++it)
+		(*it)->deregister();
+}
+
+void World::setEntityPos(Entity e, fvec3_c &pos)
+{
+	physics->setEntityPos(e, pos);
+}
+
+fvec3 World::getEntityPos(Entity e)
+{
+	return physics->getEntityPos(e);
 }
 
 void World::tryMove(ivec3_c &m)
 {
 	bool canMove = true;
-	for (ChunkListener *cl : chunkListeners)
-		if (!cl->canMove())
+	for (Module *cl : modules)
+		if (!cl->canMoveArea())
 			canMove = false;
 
 	if (!loading && canMove)
 		if (moveLock.try_lock())
 		{
-			pos+= m * size;
+			pos+= m * csize;
 
 			blockTypes.shift(-m);
-			for (ChunkListener *cl : chunkListeners)
-				cl->move(m);
+			for (Module *cl : modules)
+				cl->moveArea(m);
 			moveLock.unlock();
 		}
 }
 
-void World::resetPlayer()
+/*
+* Movement is relative to the camera (including the direction)
+* e.g. vector (0,0,1) (pointing to z positive) is FORWARDS
+*/
+void World::setWalk(int e, fvec3_c &moveSpeeds)
 {
-	btVector3 const playerPos = getEntityPos(playerEntity);
-	int bx = count.x * size.x / 2;
-	int bz = count.z * size.z / 2;
+    glm::vec3 removeY(1, 0, 1);
+    physics->setEntityForce(e,
+        (graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
+        +(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
+}
+
+void World::resetPlayer(Entity e)
+{
+	btVector3 const playerPos = getEntityPos(e);
+	int bx = ccount.x * csize.x / 2;
+	int bz = ccount.z * csize.z / 2;
 	for (int i = 0; i < 50; ++i)
 	{
-		for (int by = count.y * size.y-2; by >= 1; --by)
-			if (blockTypes.blockAt(ivec3(bx, by, bz)) == BlockType::AIR
-				&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == BlockType::AIR
-				&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == BlockType::GROUND2)
+		for (int by = ccount.y * csize.y-2; by >= 1; --by)
+			if (blockTypes.blockAt(ivec3(bx, by, bz)) == blockType.air
+				&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == blockType.air
+				&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == blockType.ground2)
 			{
-				setEntityPos(playerEntity, btVector3(bx+.5, by+playerHeight/2, bz+.5));
+				setEntityPos(e, btVector3(bx+.5, by+playerHeight/2, bz+.5));
 				return;
 			}
-		bx = rand() % count.x * size.x;
-		bz = rand() % count.z * size.z;
+		bx = rand() % ccount.x * csize.x;
+		bz = rand() % ccount.z * csize.z;
 	}
 	LOG_ERR("Cannot reset player, no free ground found.");
+}
+
+void World::jump(Entity e)
+{
+    // sometimes doesnt jump although on ground
+    //if (world->onGround())
+    physics->addEntityImpulse(e, {0, 7, 0});
+}
+
+void World::take(Entity e, int slot)
+{
+    // if selected block
+    ivec3 b1, b2;
+    fvec3 from, to;
+    from = getEntityPos(e);
+    to = from + graphics->camDir * 10;
+    bool const isSelectingBlock = physics->getSelectedBlock(from, to, b1, b2);
+    bool const isBlockValid = blockTypes.isValidBlockCoord(b1);
+
+    int const selectedEntity = physics->getSelectedEntity(from, to);
+
+	assert(slot < entityTypeHoldSlotCount[entityTypes[e]]);
+
+    // push away held entity
+    int &heldEntity = entityHoldSlots[e][slot];
+    if (heldEntity != -1)
+    {
+		physics->addEntityVelocity(heldEntity, graphics->camDir * 10);
+        for (Module *m : modules)
+			m->onEntityDrop(heldEntity, slot, e);
+        heldEntity = -1;
+    }
+    else
+    {
+        if (isSelectingBlock && isBlockValid)
+        {
+            if (selectedEntity != -1)
+                LOG_ERR("Selected entity AND block simultaneously"
+                    "(none of getSelectedBlock(...) and getSelectedEntity(...) failed)");
+
+            fvec3 pos = b1 + fvec3(.5, .5, .5);
+            heldEntity = createEntity({
+				{"type", (intP) entityType.block},
+				{"pos",  (intP)&pos},
+				{"block.blockType", (intP) blockTypes.blockAt(b1)}});
+
+            setBlockType(b1, blockType.air);
+        }
+        else
+        {
+			// set held entity to WHICHEVER entity is selected, could also be NO entity at all (-1)
+            heldEntity = selectedEntity;
+        }
+
+		for (Module *m : modules)
+			m->onEntityTake(heldEntity, slot, e);
+
+    }
+}
+
+void World::place(Entity e, int slot)
+{
+	for (Module *m : modules)
+		m->onEntityPlace(entityHoldSlots[e][slot], slot, e);
+	entityHoldSlots[e][slot] = -1;
 }
 
 void World::resizeEntityArrays()
@@ -118,98 +205,107 @@ void World::resizeEntityArrays()
 	entityEyePos.resize(newSize);
 	entityDead.resize(newSize, false);
 
-	for (EntityListener *el : entityListeners)
-		el->onEntityArrayResize(newSize);
+	for (Module *m : modules)
+		m->onEntityCountChange(newSize);
 }
 
-void World::update(Time time)
+void World::update(GameTime time)
 {
 	fvec3 ppos = getEntityPos(playerEntity);
-	int mx = count.x/2 - ppos.x / size.x;
+	int mx = ccount.x/2 - ppos.x / csize.x;
 	int my = 0;
-	int mz = count.z/2 - ppos.z / size.z;
+	int mz = ccount.z/2 - ppos.z / csize.z;
 	if (mx != 0 || my != 0 || mz != 0)
 		tryMove(-ivec3(mx, my, mz));
 
-	for (WorldListener *wl : worldListeners)
-		wl->onWorldUpdate(time);
+	for (Module *m : modules)
+		m->onUpdate(time);
 
-	for (EntityListener *el : entityListeners)
-		for (int e = 0; e < entityTypes.getCount(); ++e)
-			if (entityTypes[e] != EntityType::NONE)
-				el->onEntityUpdate(e, time);
-
-	for (int e = 0; e < entityTypes.getCount(); ++e)
-		if (entityDead[e])
-			destroyEntity(e);
+	entityDead.iterate([&](Entity e, int &dead) {if (dead) destroyEntity(e);});
 
 	if (loading)
 	{
 		bool allDone = true;
-		for (LoadCallback *loadcb : loadCallbacks)
-			if (!loadcb->doneLoading())
+		for (Module *m : modules)
+			if (m->loading)
 				allDone = false;
 
 		if (allDone)
 		{
-			resetPlayer();
+			resetPlayer(playerEntity);
 			loading = false;
 		}
 	}
 }
 
+void World::parallel(GameTime gtime)
+{
+	for (Module *p : modules)
+		p->parallel(gtime);
+}
+
 void World::setBlockType(ivec3 const &b, BlockType type)
 {
-	ivec3 const c(b / size);
-	ivec3 const b_c(b % size);
+	ivec3 const c(b / csize);
+	ivec3 const b_c(b % csize);
 
-	blockWriteLock.lock(c);
+	chunkWriteLocks[c].lock();
 	blockTypes.blockInChunk(c, b_c) = type;
-	blockWriteLock.unlock(c);
+	chunkWriteLocks[c].unlock();
+
+	for (Module *m : modules)
+		m->onBlockChange(b);
+
+#warning the modules in onBlockChange() have to do this (checking if this block is adjacent to another chunk, that is)
 
 	#define CHUNK_CHANGED(C) \
 	{ \
-	for (ChunkListener *cl : chunkListeners) \
-		cl->onChunkChange(C); \
+	for (Module *m : modules) \
+		m->onChunkChange(C); \
 	}
 
 
 	CHUNK_CHANGED(c);
 
 	if (b_c.x == 0 && c.x != 0) 					  CHUNK_CHANGED(c - ivec3(1, 0, 0))
-	else if (b_c.x == size.x-1 && c.x != count.x-1) CHUNK_CHANGED(c + ivec3(1, 0, 0))
+	else if (b_c.x == csize.x-1 && c.x != ccount.x-1) CHUNK_CHANGED(c + ivec3(1, 0, 0))
 	if (b_c.y == 0 && c.y != 0)						  CHUNK_CHANGED(c - ivec3(0, 1, 0))
-	else if (b_c.y == size.y-1 && c.y != count.y-1) CHUNK_CHANGED(c + ivec3(0, 1, 0))
+	else if (b_c.y == csize.y-1 && c.y != ccount.y-1) CHUNK_CHANGED(c + ivec3(0, 1, 0))
 	if (b_c.z == 0 && c.z != 0)						  CHUNK_CHANGED(c - ivec3(0, 0, 1))
-	else if (b_c.z == size.z-1 && c.z != count.z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
+	else if (b_c.z == csize.z-1 && c.z != ccount.z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
 }
 
 void World::onBlockChange(ivec3_c &b)
 {
-	ivec3 const c(b / size);
-	ivec3 const b_c(b % size);
+	ivec3 const c(b / csize);
+	ivec3 const b_c(b % csize);
+
+	for (Module *m : modules)
+		m->onBlockChange(b);
+
+#warning the modules in onBlockChange() have to do this (checking if this block is adjacent to another chunk, that is)
 
 	#define CHUNK_CHANGED(C) \
 	{ \
-	for (ChunkListener *cl : chunkListeners) \
-		cl->onChunkChange(C); \
+	for (Module *m : modules) \
+		m->onChunkChange(C); \
 	}
 
 
 	CHUNK_CHANGED(c);
 
 	if (b_c.x == 0 && c.x != 0) 					  CHUNK_CHANGED(c - ivec3(1, 0, 0))
-	else if (b_c.x == size.x-1 && c.x != count.x-1) CHUNK_CHANGED(c + ivec3(1, 0, 0))
+	else if (b_c.x == csize.x-1 && c.x != ccount.x-1) CHUNK_CHANGED(c + ivec3(1, 0, 0))
 	if (b_c.y == 0 && c.y != 0)						  CHUNK_CHANGED(c - ivec3(0, 1, 0))
-	else if (b_c.y == size.y-1 && c.y != count.y-1) CHUNK_CHANGED(c + ivec3(0, 1, 0))
+	else if (b_c.y == csize.y-1 && c.y != ccount.y-1) CHUNK_CHANGED(c + ivec3(0, 1, 0))
 	if (b_c.z == 0 && c.z != 0)						  CHUNK_CHANGED(c - ivec3(0, 0, 1))
-	else if (b_c.z == size.z-1 && c.z != count.z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
+	else if (b_c.z == csize.z-1 && c.z != ccount.z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
 }
 
 void World::onChunkChange(ivec3_c &c)
 {
-	for (ChunkListener *cl : chunkListeners)
-		cl->onChunkChange(c);
+	for (Module *m : modules)
+		m->onChunkChange(c);
 }
 
 bool World::onGround()
@@ -220,13 +316,12 @@ bool World::onGround()
 	for (int i = 0; i < 2; ++i)
 	{
 		bool const valid = blockTypes.isValidBlockCoord(check[i]);
-		BlockType type = valid ? blockTypes.blockAt(check[i]) : BlockType::OUTSIDE;
-		if (type == BlockType::GROUND || type == BlockType::GROUND2)
+		BlockType type = valid ? blockTypes.blockAt(check[i]) : blockType.outside;
+		if (type == blockType.ground || type == blockType.ground2)
 			return true;
 	}
 	return false;
 }
-
 
 int World::createEntity(EntityArgs args)
 {
@@ -235,14 +330,16 @@ int World::createEntity(EntityArgs args)
 	assert(args.find("eyePos") == args.end());
 
 	int createdEnt = -1;
-	auto tryCreate = [&] (int e, EntityType &type)
+	auto tryCreate = [&] (Entity e, EntityType &type)
 	{
-		if (type == EntityType::NONE)
+		if (type == entityType.none)
 		{
 			createdEnt = e;
 			type = static_cast<EntityType>(args["type"]);
-			for (EntityListener *el : entityListeners)
-				el->onEntityCreate(e, args);
+			entityHoldSlots[e].resize(entityTypeHoldSlotCount[type]);
+			entityHoldDistances[e].resize(entityTypeHoldSlotCount[type]);
+			for (Module *m : modules)
+				m->onEntityCreate(e, args);
 			return false;
 		}
 		return true;
@@ -258,11 +355,27 @@ int World::createEntity(EntityArgs args)
 	return createdEnt;
 }
 
-void World::destroyEntity(int e)
+void World::destroyEntity(Entity e)
 {
-	for (auto it = entityListeners.rbegin(); it != entityListeners.rend(); ++it)
+	for (auto it = modules.rbegin(); it != modules.rend(); ++it)
 		(*it)->onEntityDestroy(e);
-	entityTypes[e] = EntityType::NONE;
+	entityTypes[e] = entityType.none;
+}
+
+int World::createEntityType()
+{
+	int et = entityTypeCount++;
+	for (Module *m : modules)
+		m->onEntityTypeCreate(et);
+	return et;
+}
+
+int World::createBlockType()
+{
+	int bt = blockTypeCount++;
+	for (Module *m : modules)
+		m->onBlockTypeCreate(bt);
+	return bt;
 }
 
 }

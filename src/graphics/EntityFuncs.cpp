@@ -1,9 +1,10 @@
 #include "precompiled.hpp"
 
-#include "EntityFuncs.hpp"
-#include "Module.hpp"
-#include "logic/Module.hpp"
-#include "BlockFuncs.hpp"
+#include "graphics/EntityFuncs.hpp"
+
+#include "graphics/DefaultGraphics.hpp"
+#include "graphics/BlockFuncs.hpp"
+#include "logic/DefaultLogic.hpp"
 
 namespace blocks
 {
@@ -11,22 +12,22 @@ namespace blocks
 namespace graphics
 {
 
-void EntityFuncs::onRegister(World *world)
+void EntityFuncs::onRegister()
 {
-    logic = world->getFirstRegisterableByType<logic::Module>();
+    logic = world->getFirstModuleByType<logic::DefaultLogic>();
     assert(logic);
-    graphics = world->getFirstRegisterableByType<Module>();
+    graphics = dynamic_cast<DefaultGraphics *>(parent);
     assert(graphics);
-    blockFuncs = world->getFirstRegisterableByType<BlockFuncs>();
+    blockFuncs = world->getFirstModuleByType<BlockFuncs>();
     assert(blockFuncs);
 }
 
 int uploadAACubeToVbo(float tx0, float tx1, float ty0, float ty1);
 
-void EntityFuncs::onEntityCreate(int e, EntityArgs args)
+void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
 {
     EntityType const &type = world->entityTypes[e];
-    logic::EntityLogics &data = logic->entityLogics[e];
+    ::blocks::logic::EntityLogics &data = logic->entityLogics[e];
     EntityGraphics &eGraphics = graphics->entityGraphics[e];
 
     eGraphics.vertCount = 0;
@@ -34,20 +35,11 @@ void EntityFuncs::onEntityCreate(int e, EntityArgs args)
     glBindBuffer(GL_ARRAY_BUFFER, eGraphics.vbo);
 
     BlockType texType;
-    switch (type)
-    {
-    case EntityType::PLAYER:
-        break;
-    case EntityType::BLOCK:
+    if (type == world->entityType.block)
     {
         texType = data.blockEntity.blockType;
         auto t = blockFuncs->getBlockTypeTexCoords(texType);
         eGraphics.vertCount = uploadAACubeToVbo(t.first.x, t.first.x + t.second.x, t.first.y, t.first.y + t.second.y);
-        break;
-    }
-    default:
-        LOG_ERR("Cannot construct mesh for unknown entity type ", (int) type);
-        break;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
