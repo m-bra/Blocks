@@ -8,6 +8,11 @@ namespace blocks
 namespace graphics
 {
 
+void BlockFuncs::onRegister()
+{
+	setDoneLoading();
+}
+
 bool BlockFuncs::isBlockVisible(ivec3_c &b)
 {
 	BlockType blockType = world->blockTypes.blockAt(b);

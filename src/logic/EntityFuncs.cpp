@@ -15,19 +15,21 @@ namespace logic
 
 void EntityFuncs::onRegister()
 {
+    setDoneLoading();
+
     physics = world->getFirstModuleByType<physics::BulletPhysics>();
     assert(physics);
     logic = dynamic_cast<DefaultLogic *>(parent);
     assert(logic);
 }
 
-void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
+void EntityFuncs::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)
 {
 	EntityType &type = world->entityTypes[e];
 	EntityLogics &logics = logic->entityLogics[e];
     if (type == world->entityType.block)
     {
-        logics.blockEntity.blockType = (BlockType) args["block.blockType"];
+        logics.blockEntity.blockType = getFirstByType<DefaultLogic::EntityArgs>(args)->blockEntityBlockType;
         logics.blockEntity.fixTime = -1;
     }
     else if (type == world->entityType.player)

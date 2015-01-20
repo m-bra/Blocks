@@ -34,7 +34,7 @@ private:
 	glm::vec3 rotation;
 
 	bool mouseDetached = false;
-	bool moveForward, moveBackward, moveLeft, moveRight;
+	bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
 	std::thread thread;
 

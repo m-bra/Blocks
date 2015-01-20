@@ -21,6 +21,8 @@ namespace logic
 
 void DefaultLogic::onRegister()
 {
+    setDoneLoading();
+
     physics = world->getFirstModuleByType<physics::BulletPhysics>();
     chunkGenerateFlags.create(world->ccount);
 
@@ -77,7 +79,7 @@ void DefaultLogic::generate(ivec3_c &c)
     world->onChunkChange(c);
 }
 
-void DefaultLogic::onEntityCreate(Entity e, EntityArgs args)
+void DefaultLogic::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)
 {
     EntityLogics &logics = entityLogics[e];
 

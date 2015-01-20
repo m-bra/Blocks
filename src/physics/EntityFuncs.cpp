@@ -13,15 +13,15 @@ namespace physics
 
 void EntityFuncs::onRegister()
 {
+    setDoneLoading();
+    
     physics = dynamic_cast<BulletPhysics *>(parent);
 }
 
-void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
+void EntityFuncs::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)
 {
-    assert(args.find("type") != args.end());
-
     EntityPhysics &po = physics->entityPhysics[e];
-    EntityType type = (EntityType) args["type"];
+    EntityType type = world->entityTypes[e];
 
     assert(!po.created);
 
@@ -42,7 +42,7 @@ void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
         LOG_ERR("Physics: Trying to create not supported entity ", e);
 
 
-    btVector3 pos = reinterpret_cast<fvec3_c *>(args["pos"])->bt();
+    btVector3 pos = getFirstByType<World::EntityArgs>(args)->pos.bt();
     po.motionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), pos));
 
     po.shape->calculateLocalInertia(mass, inertia);

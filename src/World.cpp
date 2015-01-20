@@ -5,6 +5,8 @@
 #include "PhysicsProvider.hpp"
 #include "GraphicsProvider.hpp"
 
+#include "logic/DefaultLogic.hpp"
+
 #include <functional>
 
 namespace blocks
@@ -58,7 +60,11 @@ World::World(std::vector<Module *> &a_modules, GraphicsProvider *a_graphics, Phy
 
 	fvec3 playerPos = ccount * csize / 2;
 	playerPos.y = ccount.y * csize.y;
-	playerEntity = createEntity({{"type", (intP) entityType.player}});
+
+	EntityArgs args;
+	args.type = entityType.player;
+	args.pos = playerPos;
+	playerEntity = createEntity({&args});
 	setEntityPos(playerEntity, playerPos);
 }
 
@@ -170,10 +176,12 @@ void World::take(Entity e, int slot)
                     "(none of getSelectedBlock(...) and getSelectedEntity(...) failed)");
 
             fvec3 pos = b1 + fvec3(.5, .5, .5);
-            heldEntity = createEntity({
-				{"type", (intP) entityType.block},
-				{"pos",  (intP)&pos},
-				{"block.blockType", (intP) blockTypes.blockAt(b1)}});
+			EntityArgs world_args;
+			world_args.type = entityType.block;
+			world_args.pos = pos;
+			logic::DefaultLogic::EntityArgs logic_args;
+			logic_args.blockEntityBlockType = blockTypes.blockAt(b1);
+            heldEntity = createEntity({&world_args, &logic_args});
 
             setBlockType(b1, blockType.air);
         }
@@ -201,9 +209,11 @@ void World::resizeEntityArrays()
 	int const size = entityTypes.getCount();
 	int const newSize = 10 + size * 2;
 
-	entityTypes.resize(newSize);
+	entityTypes.resize(newSize, entityType.none);
 	entityEyePos.resize(newSize);
 	entityDead.resize(newSize, false);
+	entityHoldSlots.resize(newSize);
+	entityHoldDistances.resize(newSize);
 
 	for (Module *m : modules)
 		m->onEntityCountChange(newSize);
@@ -323,11 +333,10 @@ bool World::onGround()
 	return false;
 }
 
-int World::createEntity(EntityArgs args)
+int World::createEntity(std::vector<BaseEntityArgs *> const &args)
 {
-	assert(args.find("type") != args.end());
-	// we do NOT want this since this is removed!
-	assert(args.find("eyePos") == args.end());
+	EntityArgs *world_args = getFirstByType<EntityArgs>(args);
+	assert(world_args);
 
 	int createdEnt = -1;
 	auto tryCreate = [&] (Entity e, EntityType &type)
@@ -335,7 +344,7 @@ int World::createEntity(EntityArgs args)
 		if (type == entityType.none)
 		{
 			createdEnt = e;
-			type = static_cast<EntityType>(args["type"]);
+			type = world_args->type;
 			entityHoldSlots[e].resize(entityTypeHoldSlotCount[type]);
 			entityHoldDistances[e].resize(entityTypeHoldSlotCount[type]);
 			for (Module *m : modules)

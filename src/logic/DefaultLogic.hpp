@@ -18,6 +18,8 @@
 #include "logic/Types.hpp"
 #include "logic/EntityFuncs.hpp"
 
+#include "EntityArgs.hpp"
+
 namespace blocks
 {
 
@@ -33,11 +35,16 @@ private:
 	int seed;
 	EntityFuncs entityFuncs;
 public:
+	struct EntityArgs : BaseEntityArgs
+	{
+		BlockType blockEntityBlockType;
+	};
+
 	EntityFieldArray<EntityLogics> entityLogics;
 	ChunkFieldArray<bool> chunkGenerateFlags;
 
 
-	void onEntityCreate(Entity e, EntityArgs args) override;
+	void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) override;
 	void onEntityDestroy(Entity e) override;
 	void onEntityCountChange(int newSize) override
 	{

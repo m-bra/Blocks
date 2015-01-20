@@ -34,7 +34,7 @@ public:
     // modules are always registered with one world at a time,
     // that means for every register() there is [must be] a deregister(),
     // none of register() and deregister() can be called consecutively
-#define register registeR
+#   define register registeR
     void register(World *a_world, Module *a_parent = 0)
     {
         _world = a_world;
@@ -47,6 +47,7 @@ public:
     {
         onDeregister();
         _world = 0;
+        _parent = 0;
     }
     virtual void onRegister() {}
     virtual void onDeregister() {}
@@ -63,7 +64,7 @@ public:
     // after registering all modules, world waits for them to set the loading flag to false
     void setDoneLoading() {_loading = false;}
 
-    virtual void onEntityCreate(Entity e, EntityArgs args) {};
+    virtual void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) {};
     virtual void onEntityDestroy(Entity e) {};
     virtual void onEntityCountChange(int newCount) {};
     virtual void onEntityDrop(Entity e, int slot, Entity holder) {}

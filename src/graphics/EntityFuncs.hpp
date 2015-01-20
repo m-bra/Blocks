@@ -32,7 +32,7 @@ private:
 	GLuint blockTbo;
 public:
 	void onRegister() override;
-	void onEntityCreate(Entity e, EntityArgs args) override;
+	void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) override;
 };
 
 }  // namespace graphics

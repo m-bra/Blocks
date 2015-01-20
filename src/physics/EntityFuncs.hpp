@@ -18,16 +18,13 @@ namespace physics
 {
 class EntityFuncs : public Module
 {
-	World *world;
 	class BulletPhysics *physics;
-	btBoxShape blockShape;
+	btBoxShape blockShape{btVector3(.5, .5, .5)};
 public:
-	EntityFuncs() : blockShape(btVector3(.5, .5, .5)) {};
-
 	void onRegister() override;
-	void onUpdate(GameTime time)override;
+	void onUpdate(GameTime time) override;
 
-	void onEntityCreate(Entity e, EntityArgs args) override;
+	void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) override;
 	void onEntityDestroy(Entity e) override;
 };
 }

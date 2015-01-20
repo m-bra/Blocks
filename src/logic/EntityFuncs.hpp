@@ -27,7 +27,7 @@ public:
 	void onRegister() override;
 	void onUpdate(GameTime gtime) override;
 
-	void onEntityCreate(Entity e, EntityArgs ls) override;
+	void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) override;
 	void onEntityDrop(Entity e, int slot, Entity holder) override;
 	void onEntityTake(Entity e, int slot, Entity holder) override;
 	void onEntityPlace(Entity e, int slot, Entity holder) override;

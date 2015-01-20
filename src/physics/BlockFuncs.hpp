@@ -21,6 +21,7 @@ namespace physics
 class BlockFuncs : public Module
 {
 public:
+	void onRegister() override;
 	void addBlockShape(ivec3_c &c, ivec3_c &b, btCompoundShape *chunkShape);
 };
 

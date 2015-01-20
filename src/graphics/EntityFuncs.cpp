@@ -14,6 +14,8 @@ namespace graphics
 
 void EntityFuncs::onRegister()
 {
+    setDoneLoading();
+    
     logic = world->getFirstModuleByType<logic::DefaultLogic>();
     assert(logic);
     graphics = dynamic_cast<DefaultGraphics *>(parent);
@@ -24,7 +26,7 @@ void EntityFuncs::onRegister()
 
 int uploadAACubeToVbo(float tx0, float tx1, float ty0, float ty1);
 
-void EntityFuncs::onEntityCreate(Entity e, EntityArgs args)
+void EntityFuncs::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)
 {
     EntityType const &type = world->entityTypes[e];
     ::blocks::logic::EntityLogics &data = logic->entityLogics[e];

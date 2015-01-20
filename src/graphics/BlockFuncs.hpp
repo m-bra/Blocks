@@ -18,6 +18,7 @@ namespace graphics
 class BlockFuncs : public Module
 {
 public:
+	void onRegister() override;
 	bool isBlockVisible(ivec3 const &b);
 	std::pair<glm::vec2, glm::vec2> getBlockTypeTexCoords(BlockType type);
 	std::pair<glm::vec2, glm::vec2> getBlockTexCoords(ivec3 const &b);

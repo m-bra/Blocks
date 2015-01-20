@@ -2,7 +2,6 @@
 #define PRECOMPILED_HPP_INCLUDED
 
 #include <iostream>
-#include <cassert>
 
 #include "vec.hpp"
 

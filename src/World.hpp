@@ -6,6 +6,8 @@
 #include "precompiled.hpp"
 #endif
 
+#include "EntityArgs.hpp"
+
 #include <mutex>
 
 #include <map>
@@ -17,14 +19,42 @@ namespace blocks
 class Module;
 
 using GameTime = float;
-using EntityArgs = std::map<char const *, intP>;
 using EntityType = unsigned char;
 using BlockType = unsigned char;
 using Entity = int;
 
+template <typename T, typename B>
+T *getFirstByType(std::vector<B *> const &vector)
+{
+	for (B *base : vector)
+	{
+		T *promoted = dynamic_cast<T *>(base);
+		if (promoted)
+			return promoted;
+	}
+	return 0;
+}
+
+template <typename T, typename B>
+T *getAllByType(std::vector<T *> &results, std::vector<B *> const &vector)
+{
+	for (B *base : vector)
+	{
+		T *promoted = dynamic_cast<T *>(base);
+		if (promoted)
+			results.push_back(promoted);
+	}
+}
+
 class World
 {
 public:
+	struct EntityArgs : BaseEntityArgs
+	{
+		EntityType type;
+		fvec3 pos, eyePos;
+	};
+
 	float reach = 50;
 	float playerHeight = 2;
 	// chunk count and size
@@ -33,7 +63,7 @@ public:
 
 	std::mutex moveLock;
 	ChunkFieldArray<std::mutex> chunkWriteLocks;
-	ivec3 pos, nextMove;
+	ivec3 pos{0, 0, 0}, nextMove;
 
 	int entityTypeCount = 0, blockTypeCount = 0;
 
@@ -78,24 +108,10 @@ public:
 	~World();
 
 	template <typename T>
-	T *getFirstModuleByType()
-	{
-		for (Module *r : modules)
-			if (dynamic_cast<T *>(r))
-				return (T *) r;
-		return 0;
-	}
+	T *getFirstModuleByType() {return getFirstByType<T>(modules);}
 
 	template <typename T>
-	void getModulesByType(std::vector<T *> &arg)
-	{
-		for (Module *r : modules)
-		{
-			T *asT = dynamic_cast<T *>(r);
-			if (asT)
-				arg.push_back(asT);
-		}
-	}
+	void getModulesByType(std::vector<T *> &arg) {getAllByType(arg, modules);}
 
 	void setBlockType(ivec3_c &b, BlockType type);
 	void onBlockChange(ivec3_c &b);
@@ -103,7 +119,7 @@ public:
 
 	bool onGround();
 
-	int createEntity(EntityArgs args);
+	int createEntity(std::vector<BaseEntityArgs *> const &args);
 	void killEntity(Entity e) {entityDead[e] = true;}
 	void setEntityPos(Entity e, fvec3_c &pos);
 	fvec3 getEntityPos(Entity e);

@@ -145,15 +145,18 @@ void BulletPhysics::onUpdate(GameTime time)
 		shapeBufLock.unlock();
 	}
 
-	bool noDirty = true;
-	chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
+	if (loading)
 	{
-		if (cp.dirty)
-			noDirty = false;
-		return true;
-	});
-	if (noDirty)
-		setDoneLoading();
+		bool noDirty = true;
+		chunkPhysics.iterate([&] (ivec3_c &c, physics::ChunkPhysics &cp)
+		{
+			if (cp.dirty)
+				noDirty = false;
+			return true;
+		});
+		if (noDirty)
+			setDoneLoading();
+	}
 
 	//if (!world->loading)
 	physicsWorld->stepSimulation(time, 5);

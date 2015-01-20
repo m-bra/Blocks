@@ -80,7 +80,7 @@ public:
 	void onRegister() override;
 	void onDeregister() override;
 
-	void onEntityCreate(Entity e, EntityArgs args) override;
+	void onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args) override;
 	void onEntityDestroy(Entity e) override;
 	void onEntityCountChange(int newsize) override
 	{

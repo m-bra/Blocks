@@ -61,6 +61,8 @@ void DefaultGraphics::checkGLError(std::string msg)
 
 void DefaultGraphics::onRegister()
 {
+	setDoneLoading();
+
 	chunkTransforms.create(world->ccount);
 	chunkGraphics.create(world->ccount);
 
@@ -165,7 +167,7 @@ void DefaultGraphics::setFrameBufSize(int x, int y)
 	glViewport(0, 0, x, y);
 }
 
-void DefaultGraphics::onEntityCreate(Entity e, EntityArgs args)
+void DefaultGraphics::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)
 {
 	EntityGraphics &eg = entityGraphics[e];
 	assert(!eg.created);
