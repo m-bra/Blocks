@@ -62,6 +62,7 @@ void _log(LogType logType, std::string const &func, std::string const &file, int
 #define LOG_ERR(args...)     Log::detail::_log(Log::detail::ERR,       __PRETTY_FUNCTION__, __FILE__, __LINE__, args)
 #define LOG_WARNING(args...) Log::detail::_log(Log::detail::WARNING,   __PRETTY_FUNCTION__, __FILE__, __LINE__, args)
 #define LOG_DEBUG(args...)   Log::detail::_log(Log::detail::DEBUG,     __PRETTY_FUNCTION__, __FILE__, __LINE__, args)
+#define LOG_REACHED          Log::detail::_log(Log::detail::MSG,       __PRETTY_FUNCTION__, __FILE__, __LINE__, "Reached line.")
 #undef assert
 #define assert(B) {if (!(B)) LOG_ERR("Assertion failed: " #B);}
 

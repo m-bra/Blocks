@@ -6,6 +6,8 @@
 #include "precompiled.hpp"
 #endif
 
+#include "Timer.hpp"
+
 #include "EntityArgs.hpp"
 
 #include <mutex>
@@ -52,7 +54,7 @@ public:
 	struct EntityArgs : BaseEntityArgs
 	{
 		EntityType type;
-		fvec3 pos, eyePos;
+		fvec3 pos;
 	};
 
 	float reach = 50;
@@ -84,7 +86,7 @@ public:
 
 	EntityFieldArray<EntityType> entityTypes;
 	EntityFieldArray<fvec3> entityEyePos;
-	EntityFieldArray<bool> entityDead;
+	EntityFieldArray<bool> entityKill;
 	EntityFieldArray<std::vector<Entity>> entityHoldSlots;
 	EntityFieldArray<std::vector<float>> entityHoldDistances;
 
@@ -101,6 +103,7 @@ public:
 	std::vector<Module *> modules;
 
 	GameTime gameTime;
+	Timer timer;
 	bool loading = true;
 	int playerEntity = -1;
 
@@ -120,7 +123,7 @@ public:
 	bool onGround();
 
 	int createEntity(std::vector<BaseEntityArgs *> const &args);
-	void killEntity(Entity e) {entityDead[e] = true;}
+	void killEntity(Entity e) {destroyEntity(e);}//{entityKill[e] = true;}
 	void setEntityPos(Entity e, fvec3_c &pos);
 	fvec3 getEntityPos(Entity e);
 

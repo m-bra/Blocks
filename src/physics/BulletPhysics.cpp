@@ -152,7 +152,6 @@ void BulletPhysics::onUpdate(GameTime time)
 		{
 			if (cp.dirty)
 				noDirty = false;
-			return true;
 		});
 		if (noDirty)
 			setDoneLoading();

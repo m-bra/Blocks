@@ -2,6 +2,7 @@
 
 #include "logic/EntityFuncs.hpp"
 
+#include "PhysicsProvider.hpp"
 #include "GraphicsProvider.hpp"
 
 #include "logic/DefaultLogic.hpp"
@@ -46,16 +47,25 @@ void EntityFuncs::onUpdate(GameTime time)
         {
             EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
 
-            btRigidBody *body = physics->entityPhysics[e].body;
-            btVector3 const pos = body->getWorldTransform().getOrigin();
+            fvec3 const pos = world->getEntityPos(e);
 
             if (e == world->entityHoldSlots[world->playerEntity][0])
-                data.target = physics->getEntityPos(world->playerEntity) + world->graphics->camDir * world->entityHoldDistances[world->playerEntity][0];
+                data.target = world->getEntityPos(world->playerEntity) + world->entityEyePos[world->playerEntity] + world->graphics->camDir * world->entityHoldDistances[world->playerEntity][0];
+
+            btRigidBody *body = physics->entityPhysics[e].body;
 
             if (data.moveToTarget)
             {
-                // position
-                body->setLinearVelocity((data.target.bt() - pos) * 5);
+                // move
+                fvec3 dis = data.target - pos;
+                if (dis.length2() > 1./(1000 * 1000))
+                {
+                    if (dis.length2() < 1./(128 * 128))
+                        dis = dis.normalize() * 1./(128 * 128);
+                    world->physics->setEntityVelocity(e, dis * 5);
+                }
+                else
+                    world->physics->setEntityVelocity(e, fvec3(0, 0, 0));
 
                 // angle
                 body->getWorldTransform().setRotation(btQuaternion(0, 0, 0, 1));
@@ -85,9 +95,12 @@ void EntityFuncs::onUpdate(GameTime time)
                 data.fixTime-= time;
                 if (data.fixTime < 0)
                 {
-                    world->setBlockType((ivec3) pos, logic->entityLogics[e].blockEntity.blockType);
+                    if (world->blockTypes.isValidBlockCoord((ivec3) pos))
+                    {
+                        world->setBlockType((ivec3) pos, logic->entityLogics[e].blockEntity.blockType);
+                        world->graphics->buildChunk(ivec3(pos) / world->csize);
+                    }
                     world->killEntity(e);
-                    world->graphics->buildChunk(ivec3(pos) / world->csize);
                 }
             }
         }
@@ -96,16 +109,26 @@ void EntityFuncs::onUpdate(GameTime time)
 
 void EntityFuncs::onEntityDrop(Entity e, int slot, Entity holder)
 {
-    // assert type == BLOCK
-    EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
-    data.moveToTarget = false;
+    EntityType const &type = world->entityTypes[e];
+    if (type == world->entityType.block)
+    {
+        EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
+        data.moveToTarget = false;
+    }
 }
 
 void EntityFuncs::onEntityTake(Entity e, int slot, Entity holder)
 {
-	logic::EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
-	data.moveToTarget = true;
-	data.fixTime = -1;
+    if (e != -1)
+    {
+        EntityType const &type = world->entityTypes[e];
+        if (type == world->entityType.block)
+        {
+        	logic::EntityLogics::BlockEntity &data = logic->entityLogics[e].blockEntity;
+        	data.moveToTarget = true;
+        	data.fixTime = -1;
+        }
+    }
 }
 
 void EntityFuncs::onEntityPlace(Entity e, int slot, Entity holder)

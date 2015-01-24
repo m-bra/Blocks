@@ -65,7 +65,16 @@ World::World(std::vector<Module *> &a_modules, GraphicsProvider *a_graphics, Phy
 	args.type = entityType.player;
 	args.pos = playerPos;
 	playerEntity = createEntity({&args});
-	setEntityPos(playerEntity, playerPos);
+
+	timer.add([&]{
+		// wrap entities fallen out of the world
+		entityKill.iterate([&](Entity e, int &kill)
+		{
+			if (entityTypes[e] != entityType.none)
+				if (getEntityPos(e).y < -100)
+					setEntityPos(e, getEntityPos(e) * fvec3::XZ + fvec3::Y * 100);
+		});
+	}, 1);
 }
 
 World::~World()
@@ -110,7 +119,6 @@ void World::tryMove(ivec3_c &m)
 */
 void World::setWalk(int e, fvec3_c &moveSpeeds)
 {
-    glm::vec3 removeY(1, 0, 1);
     physics->setEntityForce(e,
         (graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
         +(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
@@ -118,7 +126,7 @@ void World::setWalk(int e, fvec3_c &moveSpeeds)
 
 void World::resetPlayer(Entity e)
 {
-	btVector3 const playerPos = getEntityPos(e);
+	fvec3 const playerPos = getEntityPos(e);
 	int bx = ccount.x * csize.x / 2;
 	int bz = ccount.z * csize.z / 2;
 	for (int i = 0; i < 50; ++i)
@@ -128,7 +136,9 @@ void World::resetPlayer(Entity e)
 				&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == blockType.air
 				&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == blockType.ground2)
 			{
-				setEntityPos(e, btVector3(bx+.5, by+playerHeight/2, bz+.5));
+				fvec3 newpos = fvec3(bx+.5, by+playerHeight/2, bz+.5);
+				setEntityPos(e, newpos);
+				assert(newpos == getEntityPos(e));
 				return;
 			}
 		bx = rand() % ccount.x * csize.x;
@@ -149,7 +159,7 @@ void World::take(Entity e, int slot)
     // if selected block
     ivec3 b1, b2;
     fvec3 from, to;
-    from = getEntityPos(e);
+    from = getEntityPos(e) + entityEyePos[e];
     to = from + graphics->camDir * 10;
     bool const isSelectingBlock = physics->getSelectedBlock(from, to, b1, b2);
     bool const isBlockValid = blockTypes.isValidBlockCoord(b1);
@@ -189,10 +199,13 @@ void World::take(Entity e, int slot)
         {
 			// set held entity to WHICHEVER entity is selected, could also be NO entity at all (-1)
             heldEntity = selectedEntity;
+			if (heldEntity == e)
+				LOG_WARNING("Entity ", e, " is holding itself.");
         }
 
-		for (Module *m : modules)
-			m->onEntityTake(heldEntity, slot, e);
+		if (heldEntity != -1)
+			for (Module *m : modules)
+				m->onEntityTake(heldEntity, slot, e);
 
     }
 }
@@ -211,7 +224,7 @@ void World::resizeEntityArrays()
 
 	entityTypes.resize(newSize, entityType.none);
 	entityEyePos.resize(newSize);
-	entityDead.resize(newSize, false);
+	entityKill.resize(newSize, false);
 	entityHoldSlots.resize(newSize);
 	entityHoldDistances.resize(newSize);
 
@@ -231,7 +244,16 @@ void World::update(GameTime time)
 	for (Module *m : modules)
 		m->onUpdate(time);
 
-	entityDead.iterate([&](Entity e, int &dead) {if (dead) destroyEntity(e);});
+	timer.update(time);
+
+	entityKill.iterate([&](Entity e, int &kill)
+	{
+		if (kill)
+		{
+			destroyEntity(e);
+			kill = false;
+		}
+	});
 
 	if (loading)
 	{
@@ -242,8 +264,8 @@ void World::update(GameTime time)
 
 		if (allDone)
 		{
-			resetPlayer(playerEntity);
 			loading = false;
+			resetPlayer(playerEntity);
 		}
 	}
 }
@@ -353,11 +375,11 @@ int World::createEntity(std::vector<BaseEntityArgs *> const &args)
 		}
 		return true;
 	};
-	entityTypes.iterate(tryCreate);
+	entityTypes.iterate_cond(tryCreate);
 	if (createdEnt == -1)
 	{
 		resizeEntityArrays();
-		entityTypes.iterate(tryCreate);
+		entityTypes.iterate_cond(tryCreate);
 		if (createdEnt == -1)
 			LOG_FATAL("Couldn't create entity ", createdEnt, " for unknown reason... (maybe corruption / out of memory)\n");
 	}

@@ -76,38 +76,59 @@ public:
 
 	void setEntityPos(Entity e, fvec3_c &pos) override
 	{
+		assert(entityPhysics[e].created);
 		entityPhysics[e].body->getWorldTransform().setOrigin(pos.bt());
 	}
 
 	fvec3 getEntityPos(Entity e) override
 	{
+		assert(entityPhysics[e].created);
 		return entityPhysics[e].body->getWorldTransform().getOrigin();
 	}
 
 	void getEntityOpenGLMatrix(Entity e, float *matrix) override
 	{
+		assert(entityPhysics[e].created);
 		return entityPhysics[e].body->getWorldTransform().getOpenGLMatrix(matrix);
 	}
 
-	void addEntityForce(Entity e, fvec3_c &f) override {entityPhysics[e].body->applyCentralForce(f.bt());}
+	void addEntityForce(Entity e, fvec3_c &f) override
+	{
+		assert(entityPhysics[e].created);
+		entityPhysics[e].body->applyCentralForce(f.bt());
+	}
+
     void setEntityForce(Entity e, fvec3_c &f) override
 	{
+		assert(entityPhysics[e].created);
 		entityPhysics[e].body->clearForces();
 		addEntityForce(e, f);
 	}
 
-	void addEntityImpulse(Entity e, fvec3_c &f) override {entityPhysics[e].body->applyCentralImpulse(f.bt());}
+	void addEntityImpulse(Entity e, fvec3_c &f) override
+	{
+		assert(entityPhysics[e].created);
+		entityPhysics[e].body->applyCentralImpulse(f.bt());
+	}
+
     void setEntityImpulse(Entity e, fvec3_c &f) override
 	{
+		assert(entityPhysics[e].created);
 		entityPhysics[e].body->setLinearVelocity(btVector3(0, 0, 0));
 		addEntityImpulse(e, f);
 	}
 
 	void addEntityVelocity(Entity e, fvec3_c &f) override
 	{
+		assert(entityPhysics[e].created);
 		entityPhysics[e].body->setLinearVelocity(entityPhysics[e].body->getLinearVelocity() + f.bt());
 	}
-    void setEntityVelocity(Entity e, fvec3_c &f) override {entityPhysics[e].body->setLinearVelocity(f.bt());}
+
+    void setEntityVelocity(Entity e, fvec3_c &f) override
+	{
+		assert(entityPhysics[e].created);
+		entityPhysics[e].body->setLinearVelocity(f.bt());
+	}
 };
 
 }

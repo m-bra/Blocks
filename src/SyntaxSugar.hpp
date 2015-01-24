@@ -17,7 +17,7 @@ struct Indexer
 
     Indexer(std::function<R(A)> const &a_function) : function(a_function) {}
 
-    R operator[](A &arg) const
+    R const &operator[](A &arg) const
     {
         return function(arg);
     }

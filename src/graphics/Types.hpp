@@ -31,6 +31,7 @@ struct ChunkGraphics
 		glGenVertexArrays(1, &vao);
 		created = true;
 		dirty = false;
+		vertCount = 0;
 	}
 
 	void destroy()

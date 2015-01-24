@@ -28,6 +28,8 @@
 namespace blocks
 {
 
+namespace logic {class DefaultLogic;}
+
 namespace graphics
 {
 
@@ -64,6 +66,7 @@ private:
 
 	BlockFuncs blockFuncs;
 	EntityFuncs entityFuncs;
+	logic::DefaultLogic *logic;
 
 	ChunkFieldArray<glm::mat4> chunkTransforms;
 

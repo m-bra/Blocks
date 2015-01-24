@@ -14,7 +14,7 @@ namespace physics
 void EntityFuncs::onRegister()
 {
     setDoneLoading();
-    
+
     physics = dynamic_cast<BulletPhysics *>(parent);
 }
 
@@ -32,11 +32,13 @@ void EntityFuncs::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &
     {
         po.shape = &blockShape;
         mass = .1;
+        world->entityEyePos[e] = fvec3(.5, .5, .5);
     }
     else if (type == world->entityType.player)
     {
-        mass = 50;
+        mass = 1;
         po.shape = new btCapsuleShape(.2, world->playerHeight - .4);
+        world->entityEyePos[e] = fvec3(.1, world->playerHeight * .4, .1);
     }
     else
         LOG_ERR("Physics: Trying to create not supported entity ", e);

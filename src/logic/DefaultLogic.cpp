@@ -21,8 +21,6 @@ namespace logic
 
 void DefaultLogic::onRegister()
 {
-    setDoneLoading();
-
     physics = world->getFirstModuleByType<physics::BulletPhysics>();
     chunkGenerateFlags.create(world->ccount);
 
@@ -52,27 +50,15 @@ void DefaultLogic::generate(ivec3_c &c)
 
         float treshold = ((float)pos.y / (world->ccount.y * world->csize.y));
         treshold = .3 + (treshold*treshold) * .5;
-        type = (noise > treshold)
-        ? world->blockType.ground
-        : world->blockType.air;
 
+        if (noise > treshold)
+            type = glm::simplex(pos.glm() / 32.f) * .25 + glm::simplex(pos.glm() / 256.f) * .75 > 0
+                    ? world->blockType.ground : world->blockType.ground2;
+        else
+            type = world->blockType.air;
         return true;
     });
-    for (int bx = 0; bx < world->csize.x; ++bx)
-        for (int bz = 0; bz < world->csize.z; ++bz)
-        {
-            for (int by = world->csize.y-1; by >= 0; --by)
-            {
-                BlockType &type = world->blockTypes.blockInChunk(c, ivec3(bx,by,bz));
-                if (type != world->blockType.air)
-                {
-                    type = world->blockType.ground2;
-                    if (rand() % 100000 == 0)
-                        type = world->blockType.companion;
-                    break;
-                }
-            }
-        }
+
     world->moveLock.unlock();
     world->chunkWriteLocks[c].unlock();
 
@@ -103,9 +89,7 @@ void DefaultLogic::parallel(GameTime time)
         if (flag)
         {
             generate(c);
-            return false;
         }
-        return true;
     });
 }
 
@@ -119,7 +103,6 @@ void DefaultLogic::onUpdate(GameTime time)
         {
             if (flag)
                 allGenerated = false;
-            return true;
         });
         if (allGenerated)
             setDoneLoading();

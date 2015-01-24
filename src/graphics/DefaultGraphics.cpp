@@ -11,6 +11,8 @@ using namespace cimg_library;
 
 #include "PhysicsProvider.hpp"
 
+#include "logic/DefaultLogic.hpp"
+
 namespace blocks
 {
 
@@ -24,24 +26,8 @@ bool DefaultGraphics::canMoveArea()
 
 void DefaultGraphics::moveArea(ivec3_c &m)
 {
-	auto createChunk = [&] (ivec3::cref c)
-	{
-		GLuint vbo, vao;
-		glGenBuffers(1, &vbo);
-		glGenVertexArrays(1, &vao);
-		chunkGraphics[c].vao = vao;
-		chunkGraphics[c].vbo = vbo;
-	};
-
-	auto destroyChunk = [&] (ivec3::cref c)
-	{
-		GLuint vbo, vao;
-		glDeleteBuffers(1, &chunkGraphics[c].vbo);
-		glDeleteVertexArrays(1, &chunkGraphics[c].vao);
-		chunkGraphics[c].vao = 0;
-		chunkGraphics[c].vbo = 0;
-	};
-
+	auto createChunk = [&] (ivec3_c &c) {chunkGraphics[c].create();};
+	auto destroyChunk = [&] (ivec3_c &c) {chunkGraphics[c].destroy();};
 	chunkGraphics.shift(-m, createChunk, destroyChunk);
 }
 
@@ -61,7 +47,7 @@ void DefaultGraphics::checkGLError(std::string msg)
 
 void DefaultGraphics::onRegister()
 {
-	setDoneLoading();
+	logic = world->getFirstModuleByType<logic::DefaultLogic>();
 
 	chunkTransforms.create(world->ccount);
 	chunkGraphics.create(world->ccount);
@@ -242,20 +228,31 @@ void DefaultGraphics::onUpdate(GameTime time)
 			vertexBufFlushed = true;
 			vertexBufLock.unlock();
 		}
+
+	if (loading)
+	{
+		bool done = !logic->loading;
+		chunkGraphics.iterate([&] (ivec3_c &c, ChunkGraphics &cg)
+		{
+			if (cg.dirty) done = false;
+		});
+		if (done)
+			setDoneLoading();
+	}
 }
 
 void DefaultGraphics::render()
 {
 	if (world->loading)
 	{
-		glClearColor(.1, .1, .2, 1);
+		glClearColor(.1, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		return;
 	}
 
 	program.bind();
 
-	fvec3 eyePos = world->getEntityPos(world->playerEntity);
+	fvec3 eyePos = world->getEntityPos(world->playerEntity) + world->entityEyePos[world->playerEntity];
 	glUniform3f(uniforms.eyePosXYZ, eyePos.x, eyePos.y, eyePos.z);
 	glUniform3f(uniforms.lightXYZ,  eyePos.x, eyePos.y + 200, eyePos.z);
 
@@ -290,13 +287,12 @@ void DefaultGraphics::render()
 			return true;*/
 
 		glDrawArrays(GL_TRIANGLES, 0, cg.vertCount);
-		return true;
 	});
 
 	entityGraphics.iterate([&] (Entity e, EntityGraphics &eg)
 	{
 		if (!eg.created)
-			return true;
+			return;
 		glBindVertexArray(eg.vao);
 
 		glm::mat4 model;
@@ -307,7 +303,6 @@ void DefaultGraphics::render()
 
 		glBindTexture(GL_TEXTURE_2D, eg.tbo);
 		glDrawArrays(GL_TRIANGLES, 0, eg.vertCount);
-		return true;
 	});
 	checkGLError("render");
 }

@@ -49,8 +49,9 @@ int main()
     atexit(glfwTerminate);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
-    bool const fullscreen = false;
+    bool const fullscreen = true;
 
     int windowWidth, windowHeight;
 
@@ -67,7 +68,7 @@ int main()
         windowWidth = 800;
         windowHeight = 600;
     }
-    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", fullscreen ? glfwGetPrimaryMonitor() : 0, 0);
+    GLFWwindow *window = glfwCreateWindow(windowWidth, windowHeight, "Blocks", fullscreen ? glfwGetPrimaryMonitor() : 0, 0);
     if (!window)
         LOG_FATAL("glfwCreateWindow(...) failed.");
     glfwSetKeyCallback(window, handleGlfwKey);
@@ -77,7 +78,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, handleGlfwFrameBuf);
     glfwMakeContextCurrent(window);
 
-    LOG_MSG("OpenGL Version: ", (char const*) glGetString(GL_VERSION));
+    LOG_MSG("OpenGL Version: ", (char const *) glGetString(GL_VERSION));
 
     appfuncs = new AppFuncs(window);
     appfuncs->frameBufEvent(windowWidth, windowHeight);
