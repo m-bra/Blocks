@@ -13,10 +13,11 @@
  * make onGround() depend on entity (not just the player, yuk!) and move to physics provider
  * Use bullet and glew with addSubDirectory()
  * saving and loading
- * remove those randomly generated mysterious staircases 
+ * remove those randomly generated mysterious staircases
 
 ## Small Todos:
  * don't let the user quit with altf4!!
  * Currently, when the distance to hold the blocks is far away, the block jumps far away when picked up.
    Change this behaviour: when picked up, the holding distance is adjusted for the block not to jump away. (hope you get it)
  * blocks stutter when placed and picked up
+ * switch from GLEW to glbinding BECAUSE IT IS FREAKING AWESOME
