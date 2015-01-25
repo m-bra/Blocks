@@ -71,8 +71,13 @@ World::World(std::vector<Module *> &a_modules, GraphicsProvider *a_graphics, Phy
 		entityKill.iterate([&](Entity e, int &kill)
 		{
 			if (entityTypes[e] != entityType.none)
-				if (getEntityPos(e).y < -100)
-					setEntityPos(e, getEntityPos(e) * fvec3::XZ + fvec3::Y * 100);
+			{
+				fvec3 pos = getEntityPos(e);
+				if (pos.y < -100)
+					setEntityPos(e, pos * fvec3::XZ + fvec3::Y * 100);
+				if (pos.x < 0 || pos.z < 0 || pos.x > ccount.x * csize.x || pos.z > ccount.z * csize.z)
+					killEntity(e);
+			}
 		});
 	}, 1);
 }

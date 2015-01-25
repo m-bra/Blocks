@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm -r -f build/Blocks
+rm -rf build
 rm -f blocks
