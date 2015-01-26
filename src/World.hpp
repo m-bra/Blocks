@@ -120,7 +120,7 @@ public:
 	void onBlockChange(ivec3_c &b);
 	void onChunkChange(ivec3_c &c);
 
-	bool onGround();
+	bool isPlayerOnGround(int e);
 
 	int createEntity(std::vector<BaseEntityArgs *> const &args);
 	void killEntity(Entity e) {destroyEntity(e);}//{entityKill[e] = true;}

@@ -155,8 +155,8 @@ void World::resetPlayer(Entity e)
 void World::jump(Entity e)
 {
     // sometimes doesnt jump although on ground
-    //if (world->onGround())
-    physics->addEntityImpulse(e, {0, 7, 0});
+    if (isPlayerOnGround(e))
+    	physics->addEntityImpulse(e, {0, 7, 0});
 }
 
 void World::take(Entity e, int slot)
@@ -345,12 +345,12 @@ void World::onChunkChange(ivec3_c &c)
 		m->onChunkChange(c);
 }
 
-bool World::onGround()
+bool World::isPlayerOnGround(int e)
 {
-	ivec3 feet = getEntityPos(playerEntity);
-	ivec3 check[2] = {feet, feet + ivec3(0, -1, 0)};
+	fvec3 feet = getEntityPos(e) - fvec3::Y * playerHeight / 2;
+	ivec3 check[] = {feet, feet - fvec3::Y * .1};
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < sizeof check / sizeof *check; ++i)
 	{
 		bool const valid = blockTypes.isValidBlockCoord(check[i]);
 		BlockType type = valid ? blockTypes.blockAt(check[i]) : blockType.outside;
