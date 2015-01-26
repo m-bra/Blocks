@@ -83,7 +83,8 @@ public:
     virtual void moveArea(ivec3_c &m) {}
 
     // called when known that a chunk has changed (e.g. a block)
-    virtual void onChunkChange(ivec3_c &c) {}
+    // if direct == false it means that a block in another chunk changed that touches chunk c
+    virtual void onChunkChange(ivec3_c &c, bool direct) {}
     // called when known that a block has changed
     // BUT not always when a block changes this method is called,
     // e.g./i.e when a whole chunk is generated, only onChunkChange() is called!

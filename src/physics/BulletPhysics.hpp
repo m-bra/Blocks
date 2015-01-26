@@ -72,7 +72,7 @@ public:
 
 	bool canMoveArea()  override {return !shapeBuf;}
 	void moveArea(ivec3_c &m) override;
-	void onChunkChange(ivec3_c &c) override {chunkPhysics[c].dirty = true;}
+	void onChunkChange(ivec3_c &c, bool direct) override {chunkPhysics[c].dirty = true;}
 
 	void setEntityPos(Entity e, fvec3_c &pos) override
 	{

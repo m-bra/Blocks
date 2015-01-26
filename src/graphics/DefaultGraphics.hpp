@@ -104,7 +104,7 @@ public:
 
 	bool canMoveArea() override;
 	void moveArea(ivec3_c &m) override;
-	void onChunkChange(ivec3_c &c) override;
+	void onChunkChange(ivec3_c &c, bool direct) override;
 };
 
 }

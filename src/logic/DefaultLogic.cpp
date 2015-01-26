@@ -62,7 +62,7 @@ void DefaultLogic::generate(ivec3_c &c)
     world->moveLock.unlock();
     world->chunkWriteLocks[c].unlock();
 
-    world->onChunkChange(c);
+    world->onChunkChange(c, true);
 }
 
 void DefaultLogic::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &args)

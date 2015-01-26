@@ -293,12 +293,10 @@ void World::setBlockType(ivec3 const &b, BlockType type)
 	for (Module *m : modules)
 		m->onBlockChange(b);
 
-#warning the modules in onBlockChange() have to do this (checking if this block is adjacent to another chunk, that is)
-
 	#define CHUNK_CHANGED(C) \
 	{ \
 	for (Module *m : modules) \
-		m->onChunkChange(C); \
+		m->onChunkChange(C, false); \
 	}
 
 
@@ -320,12 +318,10 @@ void World::onBlockChange(ivec3_c &b)
 	for (Module *m : modules)
 		m->onBlockChange(b);
 
-#warning the modules in onBlockChange() have to do this (checking if this block is adjacent to another chunk, that is)
-
 	#define CHUNK_CHANGED(C) \
 	{ \
 	for (Module *m : modules) \
-		m->onChunkChange(C); \
+		m->onChunkChange(C, false); \
 	}
 
 
@@ -339,10 +335,10 @@ void World::onBlockChange(ivec3_c &b)
 	else if (b_c.z == csize.z-1 && c.z != ccount.z-1) CHUNK_CHANGED(c + ivec3(0, 0, 1))
 }
 
-void World::onChunkChange(ivec3_c &c)
+void World::onChunkChange(ivec3_c &c, bool direct)
 {
 	for (Module *m : modules)
-		m->onChunkChange(c);
+		m->onChunkChange(c, direct);
 }
 
 bool World::isPlayerOnGround(int e)

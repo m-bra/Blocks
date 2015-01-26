@@ -31,7 +31,7 @@ void DefaultGraphics::moveArea(ivec3_c &m)
 	chunkGraphics.shift(-m, createChunk, destroyChunk);
 }
 
-void DefaultGraphics::onChunkChange(ivec3_c &c)
+void DefaultGraphics::onChunkChange(ivec3_c &c, bool direct)
 {
 	chunkGraphics[c].dirty = true;
 }

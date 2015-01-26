@@ -118,7 +118,7 @@ public:
 
 	void setBlockType(ivec3_c &b, BlockType type);
 	void onBlockChange(ivec3_c &b);
-	void onChunkChange(ivec3_c &c);
+	void onChunkChange(ivec3_c &c, bool direct);
 
 	bool isPlayerOnGround(int e);
 
