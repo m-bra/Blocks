@@ -15,7 +15,7 @@ namespace graphics
 void EntityFuncs::onRegister()
 {
     setDoneLoading();
-    
+
     logic = world->getFirstModuleByType<logic::DefaultLogic>();
     assert(logic);
     graphics = dynamic_cast<DefaultGraphics *>(parent);

@@ -11,10 +11,9 @@
  * switch from GLEW to glbinding BECAUSE IT IS FREAKING AWESOME
  * modularize voxel generator
    * use/add polyvoxel
+ * add speed cap/limit
 
 ## Fix
- * Currently, when a block changes, onChunkChange() is called with the adjacent chunks two (if the block touches them).
-   But it should be like this: call onBlockChange() on the module and it will do the check by itself!
  * remove those randomly generated mysterious staircases
  * don't let the user quit with altf4!!
  * Currently, when the distance to hold the blocks is far away, the block jumps far away when picked up.

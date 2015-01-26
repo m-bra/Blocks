@@ -124,9 +124,10 @@ void World::tryMove(ivec3_c &m)
 */
 void World::setWalk(int e, fvec3_c &moveSpeeds)
 {
-    physics->setEntityForce(e,
-        (graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
-        +(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
+	if (isPlayerOnGround(e))
+    	physics->setEntityForce(e,
+        	(graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
+        	+(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
 }
 
 void World::resetPlayer(Entity e)
