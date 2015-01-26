@@ -1,4 +1,4 @@
-## Add
+## Features
  * game logic
  * gui, text, hud (-> +crosshair)
  * Fog!
@@ -6,9 +6,11 @@
  * Antialias!
  * saving and loading
 
-## Enhance
+## Internal
  * Optimize meshing: see glescraft
  * switch from GLEW to glbinding BECAUSE IT IS FREAKING AWESOME
+ * modularize voxel generator
+   * use/add polyvoxel
 
 ## Fix
  * Currently, when a block changes, onChunkChange() is called with the adjacent chunks two (if the block touches them).
