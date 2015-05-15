@@ -84,7 +84,7 @@ void DefaultGraphics::onRegister()
 
 	// load chunk texture from file
 	using ImgComponent = unsigned char;
-	CImg<ImgComponent> chunkImg("res/chunk.png");
+	CImg<ImgComponent> chunkImg("res/chunk.bmp");
 	ImgComponent *pixels = new ImgComponent[chunkImg.width() * chunkImg.height() * 4];
 	if (chunkImg.spectrum() == 4)
 		for (int y = 0; y < chunkImg.height(); ++y)
