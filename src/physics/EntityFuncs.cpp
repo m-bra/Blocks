@@ -36,7 +36,7 @@ void EntityFuncs::onEntityCreate(Entity e, std::vector<BaseEntityArgs *> const &
     }
     else if (type == world->entityType.player)
     {
-        mass = 1;
+        mass = 25;
         po.shape = new btCapsuleShape(.2, world->playerHeight - .4);
         world->entityEyePos[e] = fvec3(.1, world->playerHeight * .4, .1);
     }
