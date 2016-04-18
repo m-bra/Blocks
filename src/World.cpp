@@ -124,10 +124,10 @@ void World::tryMove(ivec3_c &m)
 */
 void World::setWalk(int e, fvec3_c &moveSpeeds)
 {
-	if (isPlayerOnGround(e))
+	//if (isPlayerOnGround(e))
     	physics->setEntityForce(e,
-        	(graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 15
-        	+(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 15);
+        	(graphics->camDir * fvec3::XZ).normalize() * moveSpeeds.z * 300
+        	+(graphics->camLeft * fvec3::XZ).normalize() * moveSpeeds.x * 300);
 }
 
 void World::resetPlayer(Entity e)
@@ -157,7 +157,7 @@ void World::jump(Entity e)
 {
     // sometimes doesnt jump although on ground
     if (isPlayerOnGround(e))
-    	physics->addEntityImpulse(e, {0, 7, 0});
+    	physics->addEntityImpulse(e, {0, 150, 0});
 }
 
 void World::take(Entity e, int slot)
