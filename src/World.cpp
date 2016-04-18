@@ -140,7 +140,10 @@ void World::resetPlayer(Entity e)
 		for (int by = ccount.y * csize.y-2; by >= 1; --by)
 			if (blockTypes.blockAt(ivec3(bx, by, bz)) == blockType.air
 				&& blockTypes.blockAt(ivec3(bx, by+1, bz)) == blockType.air
-				&& blockTypes.blockAt(ivec3(bx, by-1, bz)) == blockType.ground2)
+				&& (
+					blockTypes.blockAt(ivec3(bx, by-1, bz)) == blockType.ground
+				 || blockTypes.blockAt(ivec3(bx, by-1, bz)) == blockType.ground2
+				))
 			{
 				fvec3 newpos = fvec3(bx+.5, by+playerHeight/2, bz+.5);
 				setEntityPos(e, newpos);
