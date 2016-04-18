@@ -2,6 +2,8 @@
 
 #include "graphics/DefaultGraphics.hpp"
 
+#include <cmath>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -78,8 +80,7 @@ void DefaultGraphics::onRegister()
 	glUniform1i(uniforms.materialDiffuseTex, 0);
 	glUniform1f(uniforms.materialShininess, 5);
 	glUniform3f(uniforms.materialSpecularRGB, .1, .1, .1);
-	glUniform3f(uniforms.ambientLightRGB, .12, .12, .12);
-	glUniform3f(uniforms.lightRGB, 50, 50, 50);
+	glUniform3f(uniforms.ambientLightRGB, .05, .05, .05);
 	glUniform1f(uniforms.lightPower, 2);
 
 	// load chunk texture from file
@@ -245,7 +246,7 @@ void DefaultGraphics::render()
 {
 	if (world->loading)
 	{
-		glClearColor(.1, 0, 0, 1);
+		glClearColor(.1, .1, .1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		return;
 	}
@@ -254,7 +255,11 @@ void DefaultGraphics::render()
 
 	fvec3 eyePos = world->getEntityPos(world->playerEntity) + world->entityEyePos[world->playerEntity];
 	glUniform3f(uniforms.eyePosXYZ, eyePos.x, eyePos.y, eyePos.z);
-	glUniform3f(uniforms.lightXYZ,  eyePos.x, eyePos.y + 200, eyePos.z);
+	glUniform3f(uniforms.lightXYZ,  0.2, -1.0, 0.3);
+
+
+	float day_factor = sin(world->gameTime / 40.) * 0.5 + 0.5;
+	glUniform3f(uniforms.lightRGB, .9 * day_factor, .9 * day_factor, .9 * day_factor);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, chunkTbo);
@@ -262,7 +267,7 @@ void DefaultGraphics::render()
 	projview = projection * glm::lookAt(eyePos.glm(),
 		eyePos.glm() + camDir.glm(), camUp.glm());
 
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0, 191 / 255. * day_factor, 1. * day_factor, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//static double const chunkDiameter = sqrt(World::CSIZE_X*World::CSIZE_X+World::CSIZE_Y*World::CSIZE_Y+World::CSIZE_Z*World::CSIZE_Z);
