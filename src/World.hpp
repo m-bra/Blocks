@@ -60,8 +60,8 @@ public:
 	float reach = 50;
 	float playerHeight = 2;
 	// chunk count and size
-	ivec3 ccount = ivec3(8, 2, 8);
-	ivec3 csize = ivec3(16, 32, 16);
+	ivec3 ccount = ivec3(32, 1, 32);
+	ivec3 csize = ivec3(16, 16, 16);
 
 	std::mutex moveLock;
 	ChunkFieldArray<std::mutex> chunkWriteLocks;
