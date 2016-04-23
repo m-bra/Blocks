@@ -7,20 +7,20 @@ cd build
 echo "--- Compiling GLEW ---"
 cp -r ../external/glew glew
 cd glew
-make -j
+make
 cd ..
 
 echo "--- Compiling Bullet ---"
 mkdir -p bullet; cd bullet
 cmake ../../external/bullet -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=. -DBUILD_EXTRAS=OFF -DBUILD_DEMOS=OFF
-make -j && make install
+make && make install
 cd ..
 
 echo "--- Compiling Blocks ---"
 mkdir -p Blocks
 cd Blocks
 cmake ../.. -G "Unix Makefiles"
-make -j
+make
 
 cp blocks ../../
 
