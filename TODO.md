@@ -21,3 +21,8 @@
  * blocks stutter when placed and picked up (especially when there are big chunks) (can be fixed by making chunks smaller)
  * Sometimes when picking up, especially the first time, the player seems to pick up itself;
    he jumps a bit forward doing it and the blocks is not grabbed
+
+## optical tweaks
+ * nicht so grell (gamma? saturation? brightness? -> videobearbeitung/filter)
+ * hands oder zielkreuz
+ * antialiasing
